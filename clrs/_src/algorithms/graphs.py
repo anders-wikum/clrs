@@ -41,6 +41,7 @@ from typing import Tuple
 import chex
 from clrs._src import probing
 from clrs._src import specs
+from collections import deque
 import numpy as np
 
 
@@ -1601,3 +1602,65 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
               'u': probing.mask_one(u, A.shape[0]),
               'phase': 1
           })
+
+def auction_matching(A: _Array, n: int, m: int) -> _Out:
+  """Auction weighted bipartite matching (Demange, Gale, Sotomayor, 1986)."""
+  chex.assert_rank(A, 2)
+  probes = probing.initialize(specs.SPECS['auction_matching'])
+  assert A.shape[0] == m + n
+
+  A_pos = np.arange(A.shape[0])
+  adj = probing.graph(np.copy(A))
+
+  probing.push(
+      probes,
+      specs.Stage.INPUT,
+      next_probe={
+          'pos': np.copy(A_pos) * 1.0 / A.shape[0],
+          'A': np.copy(A),
+          'adj': adj              
+      })
+  
+  in_queue = np.concat((np.ones(n), np.zeros(m)))
+  p = np.zeros(n + m)
+  owners = np.full(n + m, -1)
+
+  queue = deque(np.arange(n))
+  delta = 1 / (m + 1)
+
+  while queue:
+    i = queue.popleft()
+    max_inc_value = -1
+    j_star = None
+    for j in range(n, n + m + 1):
+      if A[i, j] != 0:
+        inc_value = A[i, j] - p[j]
+        if inc_value > max_inc_value:
+          j_star = j
+          max_inc_value = inc_value
+    
+    if max_inc_value >= 0:
+      queue.append(owners[j_star])
+      in_queue[owners[j_star]] = 1
+      owners[j_star] = i
+      in_queue[i] = 0
+      p[j_star] += delta
+
+    probing.push(
+      probes,
+      specs.Stage.HINT,
+      next_probe={
+          'owners_h': np.copy(owners),
+          'p': np.copy(p),
+          'in_queue': np.copy(in_queue)             
+      })
+    
+  probing.push(
+      probes,
+      specs.Stage.OUTPUT,
+      next_probe={
+          'owners': np.copy(owners)      
+      })
+
+  probing.finalize(probes)
+  return owners, probes

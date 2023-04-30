@@ -443,6 +443,18 @@ SPECS = types.MappingProxyType({
         'msk': (Stage.HINT, Location.EDGE, Type.MASK),
         'k': (Stage.HINT, Location.NODE, Type.MASK_ONE)
     },
+    'auction_matching': {
+        'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
+        'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
+        'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
+        'owners': (Stage.OUTPUT, Location.NODE, Type.POINTER),
+        'owners_h': (Stage.HINT, Location.NODE, Type.POINTER),
+        'p': (Stage.HINT, Location.NODE, Type.SCALAR),
+        'in_queue': (Stage.HINT, Location.NODE, Type.MASK)
+        # Delta
+        # Mask for goods/buyers
+        # Buyer and good dimensions
+    },
     'bipartite_matching': {
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
