@@ -41,6 +41,7 @@ from clrs._src.algorithms.graphs import dijkstra
 from clrs._src.algorithms.graphs import dag_shortest_paths
 from clrs._src.algorithms.graphs import floyd_warshall
 from clrs._src.algorithms.graphs import bipartite_matching
+from clrs._src.algorithms.graphs import auction_matching
 
 from clrs._src.algorithms.greedy import activity_selector
 from clrs._src.algorithms.greedy import task_scheduling

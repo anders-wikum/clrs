@@ -194,7 +194,10 @@ class Sampler(abc.ABC):
 
         mat = self._rng.binomial(1, p, size = (nb_nodes, nb_nodes))
         if not directed:
-            mat *= np.transpose(mat)
+            # Copy the upper triangle of the matrix to the lower triangle
+            triu = np.triu(mat)
+            if mat.shape[0] > 1:
+                mat = np.triu(mat, k = 1) + triu.T
         elif acyclic:
             mat = np.triu(mat, k = 1)
             p = self._rng.permutation(nb_nodes)  # To allow nontrivial solutions
@@ -244,17 +247,19 @@ class Sampler(abc.ABC):
 
     def _random_bipartite_graph(self, n, m, p = 0.25, weighted = False, low = 0.0, high = 1.0):
         """Random bipartite graph-based flow network."""
-        nb_nodes = n + m + 2
-        s = 0
-        t = n + m + 1
-        mat = np.zeros((nb_nodes, nb_nodes))
-        mat[s, 1:n + 1] = 1.0  # supersource
-        mat[n + 1:n + m + 1, t] = 1.0  # supersink
-        mat[1:n + 1, n + 1:n + m + 1] = self._rng.binomial(1, p, size = (n, m))
-        if weighted:
-            weights = self._rng.uniform(low = low, high = high, size = (nb_nodes, nb_nodes))
-            # Graph is directed so no need to make the weights symmetric
-            mat = mat.astype(float) * weights
+        if not weighted:
+            # In the unweighted case, use a flow network with a source and sink node
+            nb_nodes = n + m + 2
+            s = 0
+            t = n + m + 1
+            mat = np.zeros((nb_nodes, nb_nodes))
+            mat[s, 1:n + 1] = 1.0  # supersource
+            mat[n + 1:n + m + 1, t] = 1.0  # supersink
+            mat[1:n + 1, n + 1:n + m + 1] = self._rng.binomial(1, p, size = (n, m))
+        else:
+            # In the weighted case, use a graph with n left nodes and m right nodes, each connected with probability p
+            nb_nodes = n + m
+            mat = self._random_er_graph(nb_nodes, p = p, directed = False, weighted = True, low = low, high = high)
         return mat
 
 
@@ -567,8 +572,10 @@ class BipartiteSampler(Sampler):
                                              p = self._rng.choice(p),
                                              weighted = weighted,
                                              low = low, high = high)
-        return [graph, length, length_2, 0, length + length_2 + 1]
-
+        if not weighted:
+            return [graph, length, length_2, 0, length + length_2 + 1]
+        if weighted:
+            return [graph, length, length_2]
 
 
 class MatcherSampler(Sampler):
@@ -667,6 +674,7 @@ SAMPLERS = {
     'dijkstra':                      BellmanFordSampler,
     'floyd_warshall':                FloydWarshallSampler,
     'bipartite_matching':            BipartiteSampler,
+    'auction_matching':              BipartiteSampler,
     'naive_string_matcher':          MatcherSampler,
     'kmp_matcher':                   MatcherSampler,
     'segments_intersect':            SegmentsSampler,

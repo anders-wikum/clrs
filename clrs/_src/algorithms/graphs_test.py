@@ -21,7 +21,6 @@ from absl.testing import absltest
 from clrs._src.algorithms import graphs
 import numpy as np
 
-
 # Unweighted graphs.
 
 DAG = np.array([
@@ -57,7 +56,6 @@ ANOTHER_UNDIRECTED = np.array([
     [0, 0, 0, 1, 0],
 ])
 
-
 # Weighted graphs.
 
 X = np.iinfo(np.int32).max  # not connected
@@ -86,7 +84,6 @@ WEIGHTED_UNDIRECTED = np.array([
     [X, 2, 1, 5, X],
 ])
 
-
 # Bipartite graphs.
 
 BIPARTITE = np.array([
@@ -114,122 +111,138 @@ BIPARTITE_2 = np.array([
     [0, 0, 0, 0, 0, 0, 0, 0],
 ])
 
+WEIGHTED_BIPARTITE = np.array([
+    [0., 0., 0., 0.5, 0., 0.3, 0.],
+    [0., 0., 0., 0.4, 0., 0., 0.1],
+    [0., 0., 0., 0., 0.7, 0., 0.2],
+    [0., 0., 0., 0., 0., 0., 0.],
+    [0., 0., 0., 0., 0., 0., 0.],
+    [0., 0., 0., 0., 0., 0., 0.],
+    [0., 0., 0., 0., 0., 0., 0.],
+])
+
 
 class GraphsTest(absltest.TestCase):
 
-  def test_dfs(self):
-    expected_directed = np.array([0, 0, 2, 4, 1, 2])
-    out, _ = graphs.dfs(DIRECTED)
-    np.testing.assert_array_equal(expected_directed, out)
+    def test_dfs(self):
+        expected_directed = np.array([0, 0, 2, 4, 1, 2])
+        out, _ = graphs.dfs(DIRECTED)
+        np.testing.assert_array_equal(expected_directed, out)
 
-    expected_undirected = np.array([0, 0, 1, 2, 3])
-    out, _ = graphs.dfs(UNDIRECTED)
-    np.testing.assert_array_equal(expected_undirected, out)
+        expected_undirected = np.array([0, 0, 1, 2, 3])
+        out, _ = graphs.dfs(UNDIRECTED)
+        np.testing.assert_array_equal(expected_undirected, out)
 
-  def test_bfs(self):
-    expected_directed = np.array([0, 0, 2, 0, 1, 5])
-    out, _ = graphs.bfs(DIRECTED, 0)
-    np.testing.assert_array_equal(expected_directed, out)
+    def test_bfs(self):
+        expected_directed = np.array([0, 0, 2, 0, 1, 5])
+        out, _ = graphs.bfs(DIRECTED, 0)
+        np.testing.assert_array_equal(expected_directed, out)
 
-    expected_undirected = np.array([0, 0, 1, 1, 0])
-    out, _ = graphs.bfs(UNDIRECTED, 0)
-    np.testing.assert_array_equal(expected_undirected, out)
+        expected_undirected = np.array([0, 0, 1, 1, 0])
+        out, _ = graphs.bfs(UNDIRECTED, 0)
+        np.testing.assert_array_equal(expected_undirected, out)
 
-  def test_topological_sort(self):
-    expected_dag = np.array([3, 4, 0, 1, 4])
-    out, _ = graphs.topological_sort(DAG)
-    np.testing.assert_array_equal(expected_dag, out)
+    def test_topological_sort(self):
+        expected_dag = np.array([3, 4, 0, 1, 4])
+        out, _ = graphs.topological_sort(DAG)
+        np.testing.assert_array_equal(expected_dag, out)
 
-  def test_articulation_points(self):
-    expected = np.array([1, 0, 0, 1, 0])
-    out, _ = graphs.articulation_points(ANOTHER_UNDIRECTED)
-    np.testing.assert_array_equal(expected, out)
+    def test_articulation_points(self):
+        expected = np.array([1, 0, 0, 1, 0])
+        out, _ = graphs.articulation_points(ANOTHER_UNDIRECTED)
+        np.testing.assert_array_equal(expected, out)
 
-  def test_bridges(self):
-    expected = np.array([
-        [0, 0, 0, 1, -1],
-        [0, 0, 0, -1, -1],
-        [0, 0, 0, -1, -1],
-        [1, -1, -1, 0, 1],
-        [-1, -1, -1, 1, 0],
-    ])
-    out, _ = graphs.bridges(ANOTHER_UNDIRECTED)
-    np.testing.assert_array_equal(expected, out)
+    def test_bridges(self):
+        expected = np.array([
+            [0, 0, 0, 1, -1],
+            [0, 0, 0, -1, -1],
+            [0, 0, 0, -1, -1],
+            [1, -1, -1, 0, 1],
+            [-1, -1, -1, 1, 0],
+        ])
+        out, _ = graphs.bridges(ANOTHER_UNDIRECTED)
+        np.testing.assert_array_equal(expected, out)
 
-  def test_strongly_connected_components(self):
-    expected_directed = np.array([0, 1, 2, 1, 1, 5])
-    out, _ = graphs.strongly_connected_components(DIRECTED)
-    np.testing.assert_array_equal(expected_directed, out)
+    def test_strongly_connected_components(self):
+        expected_directed = np.array([0, 1, 2, 1, 1, 5])
+        out, _ = graphs.strongly_connected_components(DIRECTED)
+        np.testing.assert_array_equal(expected_directed, out)
 
-    expected_undirected = np.array([0, 0, 0, 0, 0])
-    out, _ = graphs.strongly_connected_components(UNDIRECTED)
-    np.testing.assert_array_equal(expected_undirected, out)
+        expected_undirected = np.array([0, 0, 0, 0, 0])
+        out, _ = graphs.strongly_connected_components(UNDIRECTED)
+        np.testing.assert_array_equal(expected_undirected, out)
 
-  def test_mst_kruskal(self):
-    expected = np.array([
-        [0, 1, 0, 0, 0],
-        [1, 0, 1, 1, 0],
-        [0, 1, 0, 0, 1],
-        [0, 1, 0, 0, 0],
-        [0, 0, 1, 0, 0],
-    ])
-    out, _ = graphs.mst_kruskal(WEIGHTED_UNDIRECTED)
-    np.testing.assert_array_equal(expected, out)
+    def test_mst_kruskal(self):
+        expected = np.array([
+            [0, 1, 0, 0, 0],
+            [1, 0, 1, 1, 0],
+            [0, 1, 0, 0, 1],
+            [0, 1, 0, 0, 0],
+            [0, 0, 1, 0, 0],
+        ])
+        out, _ = graphs.mst_kruskal(WEIGHTED_UNDIRECTED)
+        np.testing.assert_array_equal(expected, out)
 
-  def test_mst_prim(self):
-    expected = np.array([0, 0, 1, 1, 2])
-    out, _ = graphs.mst_prim(WEIGHTED_UNDIRECTED, 0)
-    np.testing.assert_array_equal(expected, out)
+    def test_mst_prim(self):
+        expected = np.array([0, 0, 1, 1, 2])
+        out, _ = graphs.mst_prim(WEIGHTED_UNDIRECTED, 0)
+        np.testing.assert_array_equal(expected, out)
 
-  def test_bellman_ford(self):
-    expected = np.array([0, 2, 0, 2, 3])
-    out, _ = graphs.bellman_ford(WEIGHTED_DIRECTED, 0)
-    np.testing.assert_array_equal(expected, out)
+    def test_bellman_ford(self):
+        expected = np.array([0, 2, 0, 2, 3])
+        out, _ = graphs.bellman_ford(WEIGHTED_DIRECTED, 0)
+        np.testing.assert_array_equal(expected, out)
 
-  def test_dag_shortest_paths(self):
-    expected = np.array([0, 0, 0, 2, 3])
-    out, _ = graphs.bellman_ford(WEIGHTED_DAG, 0)
-    np.testing.assert_array_equal(expected, out)
+    def test_dag_shortest_paths(self):
+        expected = np.array([0, 0, 0, 2, 3])
+        out, _ = graphs.bellman_ford(WEIGHTED_DAG, 0)
+        np.testing.assert_array_equal(expected, out)
 
-  def test_dijkstra(self):
-    expected = np.array([0, 2, 0, 2, 3])
-    out, _ = graphs.dijkstra(WEIGHTED_DIRECTED, 0)
-    np.testing.assert_array_equal(expected, out)
+    def test_dijkstra(self):
+        expected = np.array([0, 2, 0, 2, 3])
+        out, _ = graphs.dijkstra(WEIGHTED_DIRECTED, 0)
+        np.testing.assert_array_equal(expected, out)
 
-  def test_floyd_warshall(self):
-    expected = np.array([0, 2, 0, 2, 3])
-    out, _ = graphs.floyd_warshall(WEIGHTED_DIRECTED)
-    np.testing.assert_array_equal(expected, out[0])
+    def test_floyd_warshall(self):
+        expected = np.array([0, 2, 0, 2, 3])
+        out, _ = graphs.floyd_warshall(WEIGHTED_DIRECTED)
+        np.testing.assert_array_equal(expected, out[0])
 
-  def test_bipartite_matching(self):
-    expected = np.array([
-        [1, 1, 1, 1, 0, 0, -1, -1, -1, -1, -1],
-        [0, 1, -1, -1, -1, -1, 1, -1, -1, -1, -1],
-        [0, -1, 1, -1, -1, -1, 0, -1, 1, -1, -1],
-        [0, -1, -1, 1, -1, -1, -1, 1, 0, 0, -1],
-        [0, -1, -1, -1, 1, -1, -1, -1, 0, -1, -1],
-        [0, -1, -1, -1, -1, 1, -1, -1, 0, -1, -1],
-        [-1, 0, 0, -1, -1, -1, 1, -1, -1, -1, 1],
-        [-1, -1, -1, 0, -1, -1, -1, 1, -1, -1, 1],
-        [-1, -1, 0, 0, 0, 0, -1, -1, 1, -1, 1],
-        [-1, -1, -1, 0, -1, -1, -1, -1, -1, 1, 0],
-        [-1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 1],
-    ])
-    out, _ = graphs.bipartite_matching(BIPARTITE, 5, 4, 0, 10)
-    np.testing.assert_array_equal(expected, out)
+    def test_bipartite_matching(self):
+        expected = np.array([
+            [1, 1, 1, 1, 0, 0, -1, -1, -1, -1, -1],
+            [0, 1, -1, -1, -1, -1, 1, -1, -1, -1, -1],
+            [0, -1, 1, -1, -1, -1, 0, -1, 1, -1, -1],
+            [0, -1, -1, 1, -1, -1, -1, 1, 0, 0, -1],
+            [0, -1, -1, -1, 1, -1, -1, -1, 0, -1, -1],
+            [0, -1, -1, -1, -1, 1, -1, -1, 0, -1, -1],
+            [-1, 0, 0, -1, -1, -1, 1, -1, -1, -1, 1],
+            [-1, -1, -1, 0, -1, -1, -1, 1, -1, -1, 1],
+            [-1, -1, 0, 0, 0, 0, -1, -1, 1, -1, 1],
+            [-1, -1, -1, 0, -1, -1, -1, -1, -1, 1, 0],
+            [-1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 1],
+        ])
+        out, _ = graphs.bipartite_matching(BIPARTITE, 5, 4, 0, 10)
+        np.testing.assert_array_equal(expected, out)
 
-    expected_2 = np.array([
-        [1, 1, 1, 1, -1, -1, -1, -1],
-        [0, 1, -1, -1, 0, 1, -1, -1],
-        [0, -1, 1, -1, 1, -1, 0, -1],
-        [0, -1, -1, 1, -1, -1, 1, -1],
-        [-1, 0, 0, -1, 1, -1, -1, 1],
-        [-1, 0, -1, -1, -1, 1, -1, 1],
-        [-1, -1, 0, 0, -1, -1, 1, 1],
-        [-1, -1, -1, -1, 0, 0, 0, 1],
-    ])
-    out_2, _ = graphs.bipartite_matching(BIPARTITE_2, 3, 3, 0, 7)
-    np.testing.assert_array_equal(expected_2, out_2)
+        expected_2 = np.array([
+            [1, 1, 1, 1, -1, -1, -1, -1],
+            [0, 1, -1, -1, 0, 1, -1, -1],
+            [0, -1, 1, -1, 1, -1, 0, -1],
+            [0, -1, -1, 1, -1, -1, 1, -1],
+            [-1, 0, 0, -1, 1, -1, -1, 1],
+            [-1, 0, -1, -1, -1, 1, -1, 1],
+            [-1, -1, 0, 0, -1, -1, 1, 1],
+            [-1, -1, -1, -1, 0, 0, 0, 1],
+        ])
+        out_2, _ = graphs.bipartite_matching(BIPARTITE_2, 3, 3, 0, 7)
+        np.testing.assert_array_equal(expected_2, out_2)
+
+    def test_auction_matching(self):
+        expected = [-1, -1, -1, 1, 2, 0, -1]
+        out, _ = graphs.auction_matching(WEIGHTED_BIPARTITE, 3, 4)
+        np.testing.assert_array_equal(expected, out)
+
 
 if __name__ == "__main__":
-  absltest.main()
+    absltest.main()
