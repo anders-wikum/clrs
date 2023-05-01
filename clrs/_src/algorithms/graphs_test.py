@@ -239,7 +239,7 @@ class GraphsTest(absltest.TestCase):
         np.testing.assert_array_equal(expected_2, out_2)
 
     def test_auction_matching(self):
-        expected = [-1, -1, -1, 1, 2, 0, -1]
+        expected = [0, 1, 2, 1, 2, 0, 6]
         out, _ = graphs.auction_matching(WEIGHTED_BIPARTITE, 3, 4)
         np.testing.assert_array_equal(expected, out)
 

@@ -447,6 +447,7 @@ SPECS = types.MappingProxyType({
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
         'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
+        'buyers': (Stage.INPUT, Location.NODE, Type.MASK), # = 1 for buyers, 0 for goods
         'owners': (Stage.OUTPUT, Location.NODE, Type.POINTER),
         'owners_h': (Stage.HINT, Location.NODE, Type.POINTER),
         'p': (Stage.HINT, Location.NODE, Type.SCALAR),

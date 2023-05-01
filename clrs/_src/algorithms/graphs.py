@@ -1611,6 +1611,8 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
 
     A_pos = np.arange(A.shape[0])
     adj = probing.graph(np.copy(A))
+    buyers = np.zeros(n+m)
+    buyers[:n] = 1
 
     probing.push(
         probes,
@@ -1618,12 +1620,13 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
         next_probe = {
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
-            'adj': adj
+            'adj': adj,
+            'buyers': np.copy(buyers)
         })
 
     in_queue = np.concatenate((np.ones(n), np.zeros(m)))
     p = np.zeros(n + m)
-    owners = np.full(n + m, -1)
+    owners = np.arange(n + m)
 
     queue = deque(np.arange(n))
     delta = 1 / (m + 1)
@@ -1640,8 +1643,8 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
                     max_inc_value = inc_value
 
         if max_inc_value >= 0:
-            # Only enque owner if it is well-defined (not the initial value -1)
-            if owners[j_star] >= 0:
+            # Only enque owner if it is well-defined (its owner is not itself)
+            if owners[j_star] != j_star:
                 queue.append(owners[j_star])
                 in_queue[owners[j_star]] = 1
             owners[j_star] = i
