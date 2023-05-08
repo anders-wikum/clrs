@@ -260,6 +260,9 @@ class Sampler(abc.ABC):
             # In the weighted case, use a graph with n left nodes and m right nodes, each connected with probability p
             nb_nodes = n + m
             mat = self._random_er_graph(nb_nodes, p = p, directed = False, weighted = True, low = low, high = high)
+            # Remove links between owners and between goods
+            mat[:n, :n] = 0
+            mat[n:n+m, n:n+m] = 0
         return mat
 
 

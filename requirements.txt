@@ -8,3 +8,4 @@ requests~=2.29.0
 setuptools~=60.2.0
 importlib-resources
 protobuf==3.20.*
+matplotlib

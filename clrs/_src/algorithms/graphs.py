@@ -1602,6 +1602,116 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
                     'phase':         1
                 })
 
+# def parallel_auction_matching(A: _Array, n: int, m: int) -> _Out:
+#     """Auction weighted bipartite matching (Demange, Gale, Sotomayor, 1986)."""
+#     chex.assert_rank(A, 2)
+#     probes = probing.initialize(specs.SPECS['auction_matching'])
+#     assert A.shape[0] == m + n
+#
+#     A_pos = np.arange(A.shape[0])
+#     adj = probing.graph(np.copy(A))
+#     buyers = np.zeros(n+m)
+#     buyers[:n] = 1
+#
+#     probing.push(
+#         probes,
+#         specs.Stage.INPUT,
+#         next_probe = {
+#             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
+#             'A':   np.copy(A),
+#             'adj': adj,
+#             'buyers': np.copy(buyers)
+#         })
+#
+#     p = np.zeros(n + m)
+#     # Best object value
+#     v = np.zeros(n + m)
+#     # Second best object value
+#     w = np.zeros(n + m)
+#     owners = np.arange(n + m)
+#
+#     delta = 1 / (m + 1)
+#
+#     def _converged(owners):
+#         # TODO change convergence to still work in the asymmetric case
+#         # The algorithm has converged if all owners have been assigned an object
+#         return np.all(owners != np.arange(owners.shape[0]))
+#
+#     while not _converged(owners):
+#         for owner in range(n):
+#             # have both v_i and w_i in spec
+
+
+
+
+def iteration_bounded_auction_matching(A: _Array, n: int, m: int, iter: int) -> _Out:
+    """Auction weighted bipartite matching (Demange, Gale, Sotomayor, 1986)."""
+    chex.assert_rank(A, 2)
+    probes = probing.initialize(specs.SPECS['auction_matching'])
+    assert A.shape[0] == m + n
+
+    A_pos = np.arange(A.shape[0])
+    adj = probing.graph(np.copy(A))
+    buyers = np.zeros(n+m)
+    buyers[:n] = 1
+
+    probing.push(
+        probes,
+        specs.Stage.INPUT,
+        next_probe = {
+            'pos': np.copy(A_pos) * 1.0 / A.shape[0],
+            'A':   np.copy(A),
+            'adj': adj,
+            'buyers': np.copy(buyers)
+        })
+
+    in_queue = np.concatenate((np.ones(n), np.zeros(m)))
+    p = np.zeros(n + m)
+    owners = np.arange(n + m)
+
+    queue = deque(np.arange(n))
+    delta = 1 / (m + 1)
+
+    while queue:
+        i = queue.popleft()
+        max_inc_value = -1
+        j_star = None
+        for j in range(n, n + m):
+            if A[i, j] != 0:
+                inc_value = A[i, j] - p[j]
+                if inc_value > max_inc_value:
+                    j_star = j
+                    max_inc_value = inc_value
+
+        if max_inc_value >= 0:
+            # Only enque owner if it is well-defined (its owner is not itself)
+            if owners[j_star] != j_star:
+                queue.append(owners[j_star])
+                in_queue[owners[j_star]] = 1
+            owners[j_star] = i
+            owners[i] = j_star
+            in_queue[i] = 0
+            p[j_star] += delta
+
+        probing.push(
+            probes,
+            specs.Stage.HINT,
+            next_probe = {
+                'owners_h': np.copy(owners),
+                'p':        np.copy(p),
+                'in_queue': np.copy(in_queue)
+            })
+
+    probing.push(
+        probes,
+        specs.Stage.OUTPUT,
+        next_probe = {
+            'owners': np.copy(owners)
+        })
+
+    probing.finalize(probes)
+    return owners, probes
+
 
 def auction_matching(A: _Array, n: int, m: int) -> _Out:
     """Auction weighted bipartite matching (Demange, Gale, Sotomayor, 1986)."""
@@ -1648,6 +1758,7 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
                 queue.append(owners[j_star])
                 in_queue[owners[j_star]] = 1
             owners[j_star] = i
+            owners[i] = j_star
             in_queue[i] = 0
             p[j_star] += delta
 
