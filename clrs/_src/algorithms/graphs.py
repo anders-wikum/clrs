@@ -1642,9 +1642,7 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
 #             # have both v_i and w_i in spec
 
 
-
-
-def iteration_bounded_auction_matching(A: _Array, n: int, m: int, iter: int) -> _Out:
+def auction_matching(A: _Array, n: int, m: int) -> _Out:
     """Auction weighted bipartite matching (Demange, Gale, Sotomayor, 1986)."""
     chex.assert_rank(A, 2)
     probes = probing.initialize(specs.SPECS['auction_matching'])
@@ -1713,13 +1711,15 @@ def iteration_bounded_auction_matching(A: _Array, n: int, m: int, iter: int) -> 
     return owners, probes
 
 
-def auction_matching(A: _Array, n: int, m: int) -> _Out:
+def auction_matching_no_hints(A: _Array, n: int, m: int) -> _Out:
+    """Same as auction_matching algorithm but returns no hints"""
     """Auction weighted bipartite matching (Demange, Gale, Sotomayor, 1986)."""
     chex.assert_rank(A, 2)
-    probes = probing.initialize(specs.SPECS['auction_matching'])
+    probes = probing.initialize(specs.SPECS['auction_matching_no_hints'])
     assert A.shape[0] == m + n
 
     A_pos = np.arange(A.shape[0])
+    self_loops = np.copy(A_pos)
     adj = probing.graph(np.copy(A))
     buyers = np.zeros(n+m)
     buyers[:n] = 1
@@ -1766,9 +1766,7 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
             probes,
             specs.Stage.HINT,
             next_probe = {
-                'owners_h': np.copy(owners),
-                'p':        np.copy(p),
-                'in_queue': np.copy(in_queue)
+                'self_loops': np.copy(self_loops)
             })
 
     probing.push(

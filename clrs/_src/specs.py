@@ -456,6 +456,14 @@ SPECS = types.MappingProxyType({
         # Mask for goods/buyers
         # Buyer and good dimensions
     },
+    'auction_matching_no_hints': {
+        'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
+        'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
+        'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
+        'buyers': (Stage.INPUT, Location.NODE, Type.MASK), # = 1 for buyers, 0 for goods
+        'self_loops': (Stage.HINT, Location.NODE, Type.POINTER), # Required for the algorithm to know how many iterations to run
+        'owners': (Stage.OUTPUT, Location.NODE, Type.POINTER)
+    },
     'bipartite_matching': {
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),

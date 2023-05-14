@@ -1,6 +1,7 @@
 chex~=0.1.7
-jax~=0.4.8
+jax[cuda12_pip]~=0.4.8
 numpy~=1.23.5
+# tensorrt
 tensorflow~=2.12.0
 attrs~=23.1.0
 optax~=0.1.5
@@ -9,3 +10,7 @@ setuptools~=60.2.0
 importlib-resources
 protobuf==3.20.*
 matplotlib
+torch
+torchvision
+torchaudio
+torch_geometric

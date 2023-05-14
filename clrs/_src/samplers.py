@@ -678,6 +678,7 @@ SAMPLERS = {
     'floyd_warshall':                FloydWarshallSampler,
     'bipartite_matching':            BipartiteSampler,
     'auction_matching':              BipartiteSampler,
+    'auction_matching_no_hints':     BipartiteSampler,
     'naive_string_matcher':          MatcherSampler,
     'kmp_matcher':                   MatcherSampler,
     'segments_intersect':            SegmentsSampler,

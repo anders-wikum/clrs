@@ -249,7 +249,6 @@ class Net(hk.Module):
       lengths = features.lengths
 
       batch_size, nb_nodes = _data_dimensions(features)
-
       nb_mp_steps = max(1, hints[0].data.shape[0] - 1)
       hiddens = jnp.zeros((batch_size, nb_nodes, self.hidden_dim))
 
@@ -297,7 +296,6 @@ class Net(hk.Module):
           mp_state,
           jnp.arange(nb_mp_steps - 1) + 1,
           length=nb_mp_steps - 1)
-
     # We only return the last algorithm's output. That's because
     # the output only matters when a single algorithm is processed; the case
     # `algorithm_index==-1` (meaning all algorithms should be processed)
