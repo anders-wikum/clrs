@@ -60,13 +60,13 @@ def dfs(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': probing.graph(np.copy(A))
         })
 
-    color = np.zeros(A.shape[0], dtype = np.int32)
+    color = np.zeros(A.shape[0], dtype=np.int32)
     pi = np.arange(A.shape[0])
     d = np.zeros(A.shape[0])
     f = np.zeros(A.shape[0])
@@ -80,7 +80,7 @@ def dfs(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'pi_h':   np.copy(pi),
                     'color':  probing.array_cat(color, 3),
                     'd':      np.copy(d),
@@ -100,7 +100,7 @@ def dfs(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'pi_h':   np.copy(pi),
                             'color':  probing.array_cat(color, 3),
                             'd':      np.copy(d),
@@ -124,7 +124,7 @@ def dfs(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'pi_h':   np.copy(pi),
                                     'color':  probing.array_cat(color, 3),
                                     'd':      np.copy(d),
@@ -146,7 +146,7 @@ def dfs(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'pi_h':   np.copy(pi),
                             'color':  probing.array_cat(color, 3),
                             'd':      np.copy(d),
@@ -168,7 +168,7 @@ def dfs(A: _Array) -> _Out:
 
                 u = s_last
 
-    probing.push(probes, specs.Stage.OUTPUT, next_probe = {'pi': np.copy(pi)})
+    probing.push(probes, specs.Stage.OUTPUT, next_probe={'pi': np.copy(pi)})
     probing.finalize(probes)
 
     return pi, probes
@@ -185,7 +185,7 @@ def bfs(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             's':   probing.mask_one(s, A.shape[0]),
             'A':   np.copy(A),
@@ -200,7 +200,7 @@ def bfs(A: _Array, s: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'reach_h': np.copy(prev_reach),
                 'pi_h':    np.copy(pi)
             })
@@ -213,7 +213,7 @@ def bfs(A: _Array, s: int) -> _Out:
         if np.all(reach == prev_reach):
             break
 
-    probing.push(probes, specs.Stage.OUTPUT, next_probe = {'pi': np.copy(pi)})
+    probing.push(probes, specs.Stage.OUTPUT, next_probe={'pi': np.copy(pi)})
     probing.finalize(probes)
 
     return pi, probes
@@ -230,13 +230,13 @@ def topological_sort(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': probing.graph(np.copy(A))
         })
 
-    color = np.zeros(A.shape[0], dtype = np.int32)
+    color = np.zeros(A.shape[0], dtype=np.int32)
     topo = np.arange(A.shape[0])
     s_prev = np.arange(A.shape[0])
     topo_head = 0
@@ -248,7 +248,7 @@ def topological_sort(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'topo_h':      np.copy(topo),
                     'topo_head_h': probing.mask_one(topo_head, A.shape[0]),
                     'color':       probing.array_cat(color, 3),
@@ -264,7 +264,7 @@ def topological_sort(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'topo_h':      np.copy(topo),
                             'topo_head_h': probing.mask_one(topo_head, A.shape[0]),
                             'color':       probing.array_cat(color, 3),
@@ -285,7 +285,7 @@ def topological_sort(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'topo_h':      np.copy(topo),
                                     'topo_head_h': probing.mask_one(topo_head, A.shape[0]),
                                     'color':       probing.array_cat(color, 3),
@@ -307,7 +307,7 @@ def topological_sort(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'topo_h':      np.copy(topo),
                             'topo_head_h': probing.mask_one(topo_head, A.shape[0]),
                             'color':       probing.array_cat(color, 3),
@@ -330,7 +330,7 @@ def topological_sort(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.OUTPUT,
-        next_probe = {
+        next_probe={
             'topo':      np.copy(topo),
             'topo_head': probing.mask_one(topo_head, A.shape[0])
         })
@@ -350,13 +350,13 @@ def articulation_points(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': probing.graph(np.copy(A))
         })
 
-    color = np.zeros(A.shape[0], dtype = np.int32)
+    color = np.zeros(A.shape[0], dtype=np.int32)
     pi = np.arange(A.shape[0])
     d = np.zeros(A.shape[0])
     f = np.zeros(A.shape[0])
@@ -375,7 +375,7 @@ def articulation_points(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'is_cut_h':  np.copy(is_cut),
                     'pi_h':      np.copy(pi),
                     'color':     probing.array_cat(color, 3),
@@ -399,7 +399,7 @@ def articulation_points(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'is_cut_h':  np.copy(is_cut),
                             'pi_h':      np.copy(pi),
                             'color':     probing.array_cat(color, 3),
@@ -427,7 +427,7 @@ def articulation_points(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'is_cut_h':  np.copy(is_cut),
                                     'pi_h':      np.copy(pi),
                                     'color':     probing.array_cat(color, 3),
@@ -448,7 +448,7 @@ def articulation_points(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'is_cut_h':  np.copy(is_cut),
                                     'pi_h':      np.copy(pi),
                                     'color':     probing.array_cat(color, 3),
@@ -480,7 +480,7 @@ def articulation_points(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'is_cut_h':  np.copy(is_cut),
                             'pi_h':      np.copy(pi),
                             'color':     probing.array_cat(color, 3),
@@ -508,7 +508,7 @@ def articulation_points(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.OUTPUT,
-        next_probe = {'is_cut': np.copy(is_cut)},
+        next_probe={'is_cut': np.copy(is_cut)},
     )
     probing.finalize(probes)
 
@@ -527,13 +527,13 @@ def bridges(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': adj
         })
 
-    color = np.zeros(A.shape[0], dtype = np.int32)
+    color = np.zeros(A.shape[0], dtype=np.int32)
     pi = np.arange(A.shape[0])
     d = np.zeros(A.shape[0])
     f = np.zeros(A.shape[0])
@@ -542,7 +542,7 @@ def bridges(A: _Array) -> _Out:
 
     low = np.zeros(A.shape[0])
     is_bridge = (
-            np.zeros((A.shape[0], A.shape[0])) + _OutputClass.MASKED + adj)
+        np.zeros((A.shape[0], A.shape[0])) + _OutputClass.MASKED + adj)
 
     for s in range(A.shape[0]):
         if color[s] == 0:
@@ -552,7 +552,7 @@ def bridges(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'is_bridge_h': np.copy(is_bridge),
                     'pi_h':        np.copy(pi),
                     'color':       probing.array_cat(color, 3),
@@ -575,7 +575,7 @@ def bridges(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'is_bridge_h': np.copy(is_bridge),
                             'pi_h':        np.copy(pi),
                             'color':       probing.array_cat(color, 3),
@@ -601,7 +601,7 @@ def bridges(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'is_bridge_h': np.copy(is_bridge),
                                     'pi_h':        np.copy(pi),
                                     'color':       probing.array_cat(color, 3),
@@ -621,7 +621,7 @@ def bridges(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'is_bridge_h': np.copy(is_bridge),
                                     'pi_h':        np.copy(pi),
                                     'color':       probing.array_cat(color, 3),
@@ -651,7 +651,7 @@ def bridges(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'is_bridge_h': np.copy(is_bridge),
                             'pi_h':        np.copy(pi),
                             'color':       probing.array_cat(color, 3),
@@ -678,7 +678,7 @@ def bridges(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.OUTPUT,
-        next_probe = {'is_bridge': np.copy(is_bridge)},
+        next_probe={'is_bridge': np.copy(is_bridge)},
     )
     probing.finalize(probes)
 
@@ -697,14 +697,14 @@ def strongly_connected_components(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': probing.graph(np.copy(A))
         })
 
     scc_id = np.arange(A.shape[0])
-    color = np.zeros(A.shape[0], dtype = np.int32)
+    color = np.zeros(A.shape[0], dtype=np.int32)
     d = np.zeros(A.shape[0])
     f = np.zeros(A.shape[0])
     s_prev = np.arange(A.shape[0])
@@ -719,7 +719,7 @@ def strongly_connected_components(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'scc_id_h': np.copy(scc_id),
                     'A_t':      probing.graph(np.copy(A_t)),
                     'color':    probing.array_cat(color, 3),
@@ -741,7 +741,7 @@ def strongly_connected_components(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'scc_id_h': np.copy(scc_id),
                             'A_t':      probing.graph(np.copy(A_t)),
                             'color':    probing.array_cat(color, 3),
@@ -764,7 +764,7 @@ def strongly_connected_components(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'scc_id_h': np.copy(scc_id),
                                     'A_t':      probing.graph(np.copy(A_t)),
                                     'color':    probing.array_cat(color, 3),
@@ -788,7 +788,7 @@ def strongly_connected_components(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'scc_id_h': np.copy(scc_id),
                             'A_t':      probing.graph(np.copy(A_t)),
                             'color':    probing.array_cat(color, 3),
@@ -812,7 +812,7 @@ def strongly_connected_components(A: _Array) -> _Out:
 
                 u = s_last
 
-    color = np.zeros(A.shape[0], dtype = np.int32)
+    color = np.zeros(A.shape[0], dtype=np.int32)
     s_prev = np.arange(A.shape[0])
 
     for s in np.argsort(-f):
@@ -823,7 +823,7 @@ def strongly_connected_components(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'scc_id_h': np.copy(scc_id),
                     'A_t':      probing.graph(np.copy(A_t)),
                     'color':    probing.array_cat(color, 3),
@@ -846,7 +846,7 @@ def strongly_connected_components(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'scc_id_h': np.copy(scc_id),
                             'A_t':      probing.graph(np.copy(A_t)),
                             'color':    probing.array_cat(color, 3),
@@ -869,7 +869,7 @@ def strongly_connected_components(A: _Array) -> _Out:
                             probing.push(
                                 probes,
                                 specs.Stage.HINT,
-                                next_probe = {
+                                next_probe={
                                     'scc_id_h': np.copy(scc_id),
                                     'A_t':      probing.graph(np.copy(A_t)),
                                     'color':    probing.array_cat(color, 3),
@@ -893,7 +893,7 @@ def strongly_connected_components(A: _Array) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'scc_id_h': np.copy(scc_id),
                             'A_t':      probing.graph(np.copy(A_t)),
                             'color':    probing.array_cat(color, 3),
@@ -920,7 +920,7 @@ def strongly_connected_components(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.OUTPUT,
-        next_probe = {'scc_id': np.copy(scc_id)},
+        next_probe={'scc_id': np.copy(scc_id)},
     )
     probing.finalize(probes)
 
@@ -938,7 +938,7 @@ def mst_kruskal(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': probing.graph(np.copy(A))
@@ -959,7 +959,7 @@ def mst_kruskal(A: _Array) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'in_mst_h': np.copy(in_mst),
                 'pi':       np.copy(pi),
                 'u':        probing.mask_one(u, A.shape[0]),
@@ -980,7 +980,7 @@ def mst_kruskal(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'in_mst_h': np.copy(in_mst),
                     'pi':       np.copy(pi),
                     'u':        probing.mask_one(u, A.shape[0]),
@@ -1001,7 +1001,7 @@ def mst_kruskal(A: _Array) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'in_mst_h': np.copy(in_mst),
                     'pi':       np.copy(pi),
                     'u':        probing.mask_one(u, A.shape[0]),
@@ -1024,7 +1024,7 @@ def mst_kruskal(A: _Array) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'in_mst_h': np.copy(in_mst),
                 'pi':       np.copy(pi),
                 'u':        probing.mask_one(u, A.shape[0]),
@@ -1052,7 +1052,7 @@ def mst_kruskal(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.HINT,
-        next_probe = {
+        next_probe={
             'in_mst_h': np.copy(in_mst),
             'pi':       np.copy(pi),
             'u':        probing.mask_one(0, A.shape[0]),
@@ -1071,7 +1071,7 @@ def mst_kruskal(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.OUTPUT,
-        next_probe = {'in_mst': np.copy(in_mst)},
+        next_probe={'in_mst': np.copy(in_mst)},
     )
     probing.finalize(probes)
 
@@ -1089,7 +1089,7 @@ def mst_prim(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             's':   probing.mask_one(s, A.shape[0]),
             'A':   np.copy(A),
@@ -1106,7 +1106,7 @@ def mst_prim(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.HINT,
-        next_probe = {
+        next_probe={
             'pi_h':     np.copy(pi),
             'key':      np.copy(key),
             'mark':     np.copy(mark),
@@ -1115,7 +1115,8 @@ def mst_prim(A: _Array, s: int) -> _Out:
         })
 
     for _ in range(A.shape[0]):
-        u = np.argsort(key + (1.0 - in_queue) * 1e9)[0]  # drop-in for extract-min
+        # drop-in for extract-min
+        u = np.argsort(key + (1.0 - in_queue) * 1e9)[0]
         if in_queue[u] == 0:
             break
         mark[u] = 1
@@ -1130,7 +1131,7 @@ def mst_prim(A: _Array, s: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'pi_h':     np.copy(pi),
                 'key':      np.copy(key),
                 'mark':     np.copy(mark),
@@ -1138,7 +1139,7 @@ def mst_prim(A: _Array, s: int) -> _Out:
                 'u':        probing.mask_one(u, A.shape[0])
             })
 
-    probing.push(probes, specs.Stage.OUTPUT, next_probe = {'pi': np.copy(pi)})
+    probing.push(probes, specs.Stage.OUTPUT, next_probe={'pi': np.copy(pi)})
     probing.finalize(probes)
 
     return pi, probes
@@ -1155,7 +1156,7 @@ def bellman_ford(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             's':   probing.mask_one(s, A.shape[0]),
             'A':   np.copy(A),
@@ -1173,7 +1174,7 @@ def bellman_ford(A: _Array, s: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'pi_h': np.copy(pi),
                 'd':    np.copy(prev_d),
                 'msk':  np.copy(prev_msk)
@@ -1188,7 +1189,7 @@ def bellman_ford(A: _Array, s: int) -> _Out:
         if np.all(d == prev_d):
             break
 
-    probing.push(probes, specs.Stage.OUTPUT, next_probe = {'pi': np.copy(pi)})
+    probing.push(probes, specs.Stage.OUTPUT, next_probe={'pi': np.copy(pi)})
     probing.finalize(probes)
 
     return pi, probes
@@ -1205,7 +1206,7 @@ def dijkstra(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             's':   probing.mask_one(s, A.shape[0]),
             'A':   np.copy(A),
@@ -1222,7 +1223,7 @@ def dijkstra(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.HINT,
-        next_probe = {
+        next_probe={
             'pi_h':     np.copy(pi),
             'd':        np.copy(d),
             'mark':     np.copy(mark),
@@ -1231,7 +1232,8 @@ def dijkstra(A: _Array, s: int) -> _Out:
         })
 
     for _ in range(A.shape[0]):
-        u = np.argsort(d + (1.0 - in_queue) * 1e9)[0]  # drop-in for extract-min
+        # drop-in for extract-min
+        u = np.argsort(d + (1.0 - in_queue) * 1e9)[0]
         if in_queue[u] == 0:
             break
         mark[u] = 1
@@ -1246,7 +1248,7 @@ def dijkstra(A: _Array, s: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'pi_h':     np.copy(pi),
                 'd':        np.copy(d),
                 'mark':     np.copy(mark),
@@ -1254,7 +1256,7 @@ def dijkstra(A: _Array, s: int) -> _Out:
                 'u':        probing.mask_one(u, A.shape[0])
             })
 
-    probing.push(probes, specs.Stage.OUTPUT, next_probe = {'pi': np.copy(pi)})
+    probing.push(probes, specs.Stage.OUTPUT, next_probe={'pi': np.copy(pi)})
     probing.finalize(probes)
 
     return pi, probes
@@ -1271,7 +1273,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             's':   probing.mask_one(s, A.shape[0]),
             'A':   np.copy(A),
@@ -1281,7 +1283,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
     pi = np.arange(A.shape[0])
     d = np.zeros(A.shape[0])
     mark = np.zeros(A.shape[0])
-    color = np.zeros(A.shape[0], dtype = np.int32)
+    color = np.zeros(A.shape[0], dtype=np.int32)
     topo = np.arange(A.shape[0])
     s_prev = np.arange(A.shape[0])
     topo_head = 0
@@ -1291,7 +1293,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.HINT,
-        next_probe = {
+        next_probe={
             'pi_h':        np.copy(pi),
             'd':           np.copy(d),
             'mark':        np.copy(mark),
@@ -1311,7 +1313,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'pi_h':        np.copy(pi),
                     'd':           np.copy(d),
                     'mark':        np.copy(mark),
@@ -1336,7 +1338,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
                     probing.push(
                         probes,
                         specs.Stage.HINT,
-                        next_probe = {
+                        next_probe={
                             'pi_h':        np.copy(pi),
                             'd':           np.copy(d),
                             'mark':        np.copy(mark),
@@ -1362,7 +1364,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'pi_h':        np.copy(pi),
                     'd':           np.copy(d),
                     'mark':        np.copy(mark),
@@ -1397,7 +1399,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'pi_h':        np.copy(pi),
                 'd':           np.copy(d),
                 'mark':        np.copy(mark),
@@ -1424,7 +1426,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.HINT,
-        next_probe = {
+        next_probe={
             'pi_h':        np.copy(pi),
             'd':           np.copy(d),
             'mark':        np.copy(mark),
@@ -1439,7 +1441,7 @@ def dag_shortest_paths(A: _Array, s: int) -> _Out:
             'phase':       1
         })
 
-    probing.push(probes, specs.Stage.OUTPUT, next_probe = {'pi': np.copy(pi)})
+    probing.push(probes, specs.Stage.OUTPUT, next_probe={'pi': np.copy(pi)})
     probing.finalize(probes)
 
     return pi, probes
@@ -1456,7 +1458,7 @@ def floyd_warshall(A: _Array) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) / A.shape[0],
             'A':   np.copy(A),
             'adj': probing.graph(np.copy(A))
@@ -1477,7 +1479,7 @@ def floyd_warshall(A: _Array) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'Pi_h': np.copy(Pi),
                 'D':    np.copy(prev_D),
                 'msk':  np.copy(prev_msk),
@@ -1494,7 +1496,7 @@ def floyd_warshall(A: _Array) -> _Out:
                         D[i, j] = prev_D[i, j]
                     msk[i, j] = 1
 
-    probing.push(probes, specs.Stage.OUTPUT, next_probe = {'Pi': np.copy(Pi)})
+    probing.push(probes, specs.Stage.OUTPUT, next_probe={'Pi': np.copy(Pi)})
     probing.finalize(probes)
 
     return Pi, probes
@@ -1515,7 +1517,7 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': adj,
@@ -1523,8 +1525,8 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
             't':   probing.mask_one(t, A.shape[0])
         })
     in_matching = (
-            np.zeros((A.shape[0], A.shape[1])) + _OutputClass.MASKED + adj
-            + adj.T)
+        np.zeros((A.shape[0], A.shape[1])) + _OutputClass.MASKED + adj
+        + adj.T)
     u = t
     while True:
         mask = np.zeros(A.shape[0])
@@ -1538,7 +1540,7 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'in_matching_h': np.copy(in_matching),
                     'A_h':           np.copy(A),
                     'adj_h':         probing.graph(np.copy(A)),
@@ -1560,7 +1562,7 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
                 probing.push(
                     probes,
                     specs.Stage.OUTPUT,
-                    next_probe = {'in_matching': np.copy(in_matching)},
+                    next_probe={'in_matching': np.copy(in_matching)},
                 )
                 probing.finalize(probes)
                 return in_matching, probes
@@ -1570,7 +1572,7 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'in_matching_h': np.copy(in_matching),
                 'A_h':           np.copy(A),
                 'adj_h':         probing.graph(np.copy(A)),
@@ -1591,7 +1593,7 @@ def bipartite_matching(A: _Array, n: int, m: int, s: int, t: int) -> _Out:
             probing.push(
                 probes,
                 specs.Stage.HINT,
-                next_probe = {
+                next_probe={
                     'in_matching_h': np.copy(in_matching),
                     'A_h':           np.copy(A),
                     'adj_h':         probing.graph(np.copy(A)),
@@ -1656,7 +1658,7 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': adj,
@@ -1694,7 +1696,7 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'owners_h': np.copy(owners),
                 'p':        np.copy(p),
                 'in_queue': np.copy(in_queue)
@@ -1703,12 +1705,89 @@ def auction_matching(A: _Array, n: int, m: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.OUTPUT,
-        next_probe = {
+        next_probe={
             'owners': np.copy(owners)
         })
 
     probing.finalize(probes)
     return owners, probes
+
+
+def simplified_min_sum(A: _Array, n: int, m: int):
+
+    def _symmetrize(A):
+        dim = A.shape[0] + A.shape[1]
+        B = np.zeros((dim, dim))
+        B[:n, -m:] = A
+        B[-m:, :n] = A.T
+        return B
+
+    def _reconcile(L_pref, R_pref):
+        shift = len(L_pref)
+        matching = np.full(len(L_pref) + len(R_pref), fill_value=-1)
+        for i in range(len(L_pref)):
+            if R_pref[L_pref[i]] == i:
+                matching[i] = L_pref[i] + shift
+                matching[L_pref[i] + shift] = i
+        return matching
+
+    chex.assert_rank(A, 2)
+    probes = probing.initialize(specs.SPECS['simplified_min_sum'])
+    assert A.shape[0] == m + n
+
+    A_pos = np.arange(A.shape[0])
+    L = np.zeros(n+m)
+    L[:n] = 1
+
+    probing.push(
+        probes,
+        specs.Stage.INPUT,
+        next_probe={
+            'pos': np.copy(A_pos) * 1.0 / A.shape[0],
+            'A':   np.copy(A),
+            'L': np.copy(L)
+        })
+
+    A = np.copy(A[:n, -m:])
+    M_f = np.copy(A)
+    M_b = np.copy(A.T)
+
+    for _ in range(25):
+        # One message-passing round
+        prev_M_f = np.copy(M_f)
+        for j in range(m):
+            mask = np.ones(m, dtype=bool)
+            mask[j] = 0
+            M_f[:, j] = A[:, j] - np.max(M_b[mask, :], axis=0)
+
+        for i in range(n):
+            mask = np.ones(n, dtype=bool)
+            mask[i] = 0
+            M_b[:, i] = A.T[:, i] - np.max(prev_M_f[mask, :], axis=0)
+
+        # Compute best guess at matching
+        matching = _reconcile(np.argmax(M_f, axis=1), np.argmax(M_f, axis=0))
+
+        # Push updates
+        probing.push(
+            probes,
+            specs.Stage.HINT,
+            next_probe={
+                'M_h': np.copy(_symmetrize(M_f)),
+                'match_h': np.copy(matching)
+            })
+
+    matching = _reconcile(np.argmax(M_f, axis=1), np.argmax(M_f, axis=0))
+
+    probing.push(
+        probes,
+        specs.Stage.OUTPUT,
+        next_probe={
+            'match': np.copy(matching)
+        })
+
+    probing.finalize(probes)
+    return matching, probes
 
 
 def auction_matching_no_hints(A: _Array, n: int, m: int) -> _Out:
@@ -1727,7 +1806,7 @@ def auction_matching_no_hints(A: _Array, n: int, m: int) -> _Out:
     probing.push(
         probes,
         specs.Stage.INPUT,
-        next_probe = {
+        next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
             'adj': adj,
@@ -1765,14 +1844,14 @@ def auction_matching_no_hints(A: _Array, n: int, m: int) -> _Out:
         probing.push(
             probes,
             specs.Stage.HINT,
-            next_probe = {
+            next_probe={
                 'self_loops': np.copy(self_loops)
             })
 
     probing.push(
         probes,
         specs.Stage.OUTPUT,
-        next_probe = {
+        next_probe={
             'owners': np.copy(owners)
         })
 

@@ -160,10 +160,10 @@ class Sampler(abc.ABC):
 
                 # Returns a fixed-size random batch.
                 indices = self._rng.choice(self._num_samples, (batch_size,),
-                                           replace = True)
-                inputs = _subsample_data(self._inputs, indices, axis = 0)
-                outputs = _subsample_data(self._outputs, indices, axis = 0)
-                hints = _subsample_data(self._hints, indices, axis = 1)
+                                           replace=True)
+                inputs = _subsample_data(self._inputs, indices, axis=0)
+                outputs = _subsample_data(self._outputs, indices, axis=0)
+                hints = _subsample_data(self._hints, indices, axis=1)
                 lengths = self._lengths[indices]
 
         else:
@@ -180,43 +180,47 @@ class Sampler(abc.ABC):
     def _sample_data(self, length: int, *args, **kwargs) -> List[_Array]:
         pass
 
-    def _random_sequence(self, length, low = 0.0, high = 1.0):
+    def _random_sequence(self, length, low=0.0, high=1.0):
         """Random sequence."""
-        return self._rng.uniform(low = low, high = high, size = (length,))
+        return self._rng.uniform(low=low, high=high, size=(length,))
 
-    def _random_string(self, length, chars = 4):
+    def _random_string(self, length, chars=4):
         """Random string."""
-        return self._rng.randint(0, high = chars, size = (length,))
+        return self._rng.randint(0, high=chars, size=(length,))
 
-    def _random_er_graph(self, nb_nodes, p = 0.5, directed = False, acyclic = False,
-                         weighted = False, low = 0.0, high = 1.0):
+    def _random_er_graph(self, nb_nodes, p=0.5, directed=False, acyclic=False,
+                         weighted=False, low=0.0, high=1.0):
         """Random Erdos-Renyi graph."""
 
-        mat = self._rng.binomial(1, p, size = (nb_nodes, nb_nodes))
+        mat = self._rng.binomial(1, p, size=(nb_nodes, nb_nodes))
         if not directed:
             # Copy the upper triangle of the matrix to the lower triangle
             triu = np.triu(mat)
             if mat.shape[0] > 1:
-                mat = np.triu(mat, k = 1) + triu.T
+                mat = np.triu(mat, k=1) + triu.T
         elif acyclic:
-            mat = np.triu(mat, k = 1)
-            p = self._rng.permutation(nb_nodes)  # To allow nontrivial solutions
+            mat = np.triu(mat, k=1)
+            # To allow nontrivial solutions
+            p = self._rng.permutation(nb_nodes)
             mat = mat[p, :][:, p]
         if weighted:
-            weights = self._rng.uniform(low = low, high = high, size = (nb_nodes, nb_nodes))
+            weights = self._rng.uniform(
+                low=low, high=high, size=(nb_nodes, nb_nodes))
             if not directed:
                 weights *= np.transpose(weights)
-                weights = np.sqrt(weights + 1e-3)  # Add epsilon to protect underflow
+                # Add epsilon to protect underflow
+                weights = np.sqrt(weights + 1e-3)
             mat = mat.astype(float) * weights
         return mat
 
-    def _random_community_graph(self, nb_nodes, k = 4, p = 0.5, eps = 0.01,
-                                directed = False, acyclic = False, weighted = False,
-                                low = 0.0, high = 1.0):
+    def _random_community_graph(self, nb_nodes, k=4, p=0.5, eps=0.01,
+                                directed=False, acyclic=False, weighted=False,
+                                low=0.0, high=1.0):
         """Random perturbed k-community graph."""
         mat = np.zeros((nb_nodes, nb_nodes))
         if k > nb_nodes:
-            raise ValueError(f'Cannot generate graph of too many ({k}) communities.')
+            raise ValueError(
+                f'Cannot generate graph of too many ({k}) communities.')
         los, his = [], []
         lo = 0
         for i in range(k):
@@ -225,15 +229,15 @@ class Sampler(abc.ABC):
             else:
                 hi = lo + nb_nodes // k
             mat[lo:hi, lo:hi] = self._random_er_graph(
-                hi - lo, p = p, directed = directed,
-                acyclic = acyclic, weighted = weighted,
-                low = low, high = high)
+                hi - lo, p=p, directed=directed,
+                acyclic=acyclic, weighted=weighted,
+                low=low, high=high)
             los.append(lo)
             his.append(hi)
             lo = hi
-        toggle = self._random_er_graph(nb_nodes, p = eps, directed = directed,
-                                       acyclic = acyclic, weighted = weighted,
-                                       low = low, high = high)
+        toggle = self._random_er_graph(nb_nodes, p=eps, directed=directed,
+                                       acyclic=acyclic, weighted=weighted,
+                                       low=low, high=high)
 
         # Prohibit closing new cycles
         for i in range(k):
@@ -245,7 +249,7 @@ class Sampler(abc.ABC):
         mat = mat[p, :][:, p]
         return mat
 
-    def _random_bipartite_graph(self, n, m, p = 0.25, weighted = False, low = 0.0, high = 1.0):
+    def _random_bipartite_graph(self, n, m, p=0.25, weighted=False, low=0.0, high=1.0):
         """Random bipartite graph-based flow network."""
         if not weighted:
             # In the unweighted case, use a flow network with a source and sink node
@@ -255,11 +259,13 @@ class Sampler(abc.ABC):
             mat = np.zeros((nb_nodes, nb_nodes))
             mat[s, 1:n + 1] = 1.0  # supersource
             mat[n + 1:n + m + 1, t] = 1.0  # supersink
-            mat[1:n + 1, n + 1:n + m + 1] = self._rng.binomial(1, p, size = (n, m))
+            mat[1:n + 1, n + 1:n + m +
+                1] = self._rng.binomial(1, p, size=(n, m))
         else:
             # In the weighted case, use a graph with n left nodes and m right nodes, each connected with probability p
             nb_nodes = n + m
-            mat = self._random_er_graph(nb_nodes, p = p, directed = False, weighted = True, low = low, high = high)
+            mat = self._random_er_graph(
+                nb_nodes, p=p, directed=False, weighted=True, low=low, high=high)
             # Remove links between owners and between goods
             mat[:n, :n] = 0
             mat[n:n+m, n:n+m] = 0
@@ -281,12 +287,13 @@ def build_sampler(
     algorithm = getattr(algorithms, name)
     sampler_class = SAMPLERS[name]
     # Ignore kwargs not accepted by the sampler.
-    sampler_args = inspect.signature(sampler_class._sample_data).parameters  # pylint:disable=protected-access
+    sampler_args = inspect.signature(
+        sampler_class._sample_data).parameters  # pylint:disable=protected-access
     clean_kwargs = {k: kwargs[k] for k in kwargs if k in sampler_args}
     if set(clean_kwargs) != set(kwargs):
         logging.warning('Ignoring kwargs %s when building sampler class %s',
                         set(kwargs).difference(clean_kwargs), sampler_class)
-    sampler = sampler_class(algorithm, spec, num_samples, seed = seed,
+    sampler = sampler_class(algorithm, spec, num_samples, seed=seed,
                             *args, **clean_kwargs)
     return sampler, spec
 
@@ -300,7 +307,7 @@ class SortingSampler(Sampler):
             low: float = 0.,
             high: float = 1.,
     ):
-        arr = self._random_sequence(length = length, low = low, high = high)
+        arr = self._random_sequence(length=length, low=low, high=high)
         return [arr]
 
 
@@ -313,9 +320,9 @@ class SearchSampler(Sampler):
             low: float = 0.,
             high: float = 1.,
     ):
-        arr = self._random_sequence(length = length, low = low, high = high)
+        arr = self._random_sequence(length=length, low=low, high=high)
         arr.sort()
-        x = self._rng.uniform(low = low, high = high)
+        x = self._rng.uniform(low=low, high=high)
         return [x, arr]
 
 
@@ -328,7 +335,7 @@ class MaxSubarraySampler(Sampler):
             low: float = -1.,
             high: float = 1.,
     ):
-        arr = self._random_sequence(length = length, low = low, high = high)
+        arr = self._random_sequence(length=length, low=low, high=high)
         return [arr]
 
 
@@ -345,8 +352,8 @@ class LCSSampler(Sampler):
             # Assume provided length is total length.
             length_2 = length // 2
             length -= length_2
-        a = self._random_string(length = length, chars = chars)
-        b = self._random_string(length = length_2, chars = chars)
+        a = self._random_string(length=length, chars=chars)
+        b = self._random_string(length=length_2, chars=chars)
         return [a, b]
 
 
@@ -358,7 +365,7 @@ class OptimalBSTSampler(Sampler):
             length: int,
     ):
         tot_length = length + (length + 1)
-        arr = self._random_sequence(length = tot_length, low = 0.0, high = 1.0)
+        arr = self._random_sequence(length=tot_length, low=0.0, high=1.0)
         arr /= np.sum(arr)
         p = arr[:length]
         q = arr[length:]
@@ -374,8 +381,8 @@ class ActivitySampler(Sampler):
             low: float = 0.,
             high: float = 1.,
     ):
-        arr_1 = self._random_sequence(length = length, low = low, high = high)
-        arr_2 = self._random_sequence(length = length, low = low, high = high)
+        arr_1 = self._random_sequence(length=length, low=low, high=high)
+        arr_2 = self._random_sequence(length=length, low=low, high=high)
         return [np.minimum(arr_1, arr_2), np.maximum(arr_1, arr_2)]
 
 
@@ -391,8 +398,8 @@ class TaskSampler(Sampler):
     ):
         if max_deadline is None:
             max_deadline = length
-        d = self._random_string(length = length, chars = max_deadline) + 1
-        w = self._random_sequence(length = length, low = low, high = high)
+        d = self._random_string(length=length, chars=max_deadline) + 1
+        w = self._random_sequence(length=length, low=low, high=high)
         return [d, w]
 
 
@@ -405,8 +412,8 @@ class DfsSampler(Sampler):
             p: Tuple[float, ...] = (0.5,),
     ):
         graph = self._random_er_graph(
-            nb_nodes = length, p = self._rng.choice(p),
-            directed = True, acyclic = False, weighted = False)
+            nb_nodes=length, p=self._rng.choice(p),
+            directed=True, acyclic=False, weighted=False)
         return [graph]
 
 
@@ -419,8 +426,8 @@ class BfsSampler(Sampler):
             p: Tuple[float, ...] = (0.5,),
     ):
         graph = self._random_er_graph(
-            nb_nodes = length, p = self._rng.choice(p),
-            directed = False, acyclic = False, weighted = False)
+            nb_nodes=length, p=self._rng.choice(p),
+            directed=False, acyclic=False, weighted=False)
         source_node = self._rng.choice(length)
         return [graph, source_node]
 
@@ -434,8 +441,8 @@ class TopoSampler(Sampler):
             p: Tuple[float, ...] = (0.5,),
     ):
         graph = self._random_er_graph(
-            nb_nodes = length, p = self._rng.choice(p),
-            directed = True, acyclic = True, weighted = False)
+            nb_nodes=length, p=self._rng.choice(p),
+            directed=True, acyclic=True, weighted=False)
         return [graph]
 
 
@@ -448,8 +455,8 @@ class ArticulationSampler(Sampler):
             p: Tuple[float, ...] = (0.2,),
     ):
         graph = self._random_er_graph(
-            nb_nodes = length, p = self._rng.choice(p), directed = False,
-            acyclic = False, weighted = False)
+            nb_nodes=length, p=self._rng.choice(p), directed=False,
+            acyclic=False, weighted=False)
         return [graph]
 
 
@@ -459,18 +466,19 @@ class MSTSampler(Sampler):
     def _sample_data(
             self,
             length: int,
-            p: Tuple[float, ...] = (0.2,),  # lower p to account for class imbalance
+            # lower p to account for class imbalance
+            p: Tuple[float, ...] = (0.2,),
             low: float = 0.,
             high: float = 1.,
     ):
         graph = self._random_er_graph(
-            nb_nodes = length,
-            p = self._rng.choice(p),
-            directed = False,
-            acyclic = False,
-            weighted = True,
-            low = low,
-            high = high)
+            nb_nodes=length,
+            p=self._rng.choice(p),
+            directed=False,
+            acyclic=False,
+            weighted=True,
+            low=low,
+            high=high)
         return [graph]
 
 
@@ -485,13 +493,13 @@ class BellmanFordSampler(Sampler):
             high: float = 1.,
     ):
         graph = self._random_er_graph(
-            nb_nodes = length,
-            p = self._rng.choice(p),
-            directed = False,
-            acyclic = False,
-            weighted = True,
-            low = low,
-            high = high)
+            nb_nodes=length,
+            p=self._rng.choice(p),
+            directed=False,
+            acyclic=False,
+            weighted=True,
+            low=low,
+            high=high)
         source_node = self._rng.choice(length)
         return [graph, source_node]
 
@@ -507,13 +515,13 @@ class DAGPathSampler(Sampler):
             high: float = 1.,
     ):
         graph = self._random_er_graph(
-            nb_nodes = length,
-            p = self._rng.choice(p),
-            directed = True,
-            acyclic = True,
-            weighted = True,
-            low = low,
-            high = high)
+            nb_nodes=length,
+            p=self._rng.choice(p),
+            directed=True,
+            acyclic=True,
+            weighted=True,
+            low=low,
+            high=high)
         source_node = self._rng.choice(length)
         return [graph, source_node]
 
@@ -529,13 +537,13 @@ class FloydWarshallSampler(Sampler):
             high: float = 1.,
     ):
         graph = self._random_er_graph(
-            nb_nodes = length,
-            p = self._rng.choice(p),
-            directed = False,
-            acyclic = False,
-            weighted = True,
-            low = low,
-            high = high)
+            nb_nodes=length,
+            p=self._rng.choice(p),
+            directed=False,
+            acyclic=False,
+            weighted=True,
+            low=low,
+            high=high)
         return [graph]
 
 
@@ -550,8 +558,8 @@ class SccSampler(Sampler):
             eps: float = 0.01,
     ):
         graph = self._random_community_graph(
-            nb_nodes = length, k = k, p = self._rng.choice(p), eps = eps,
-            directed = True, acyclic = False, weighted = False)
+            nb_nodes=length, k=k, p=self._rng.choice(p), eps=eps,
+            directed=True, acyclic=False, weighted=False)
         return [graph]
 
 
@@ -571,10 +579,10 @@ class BipartiteSampler(Sampler):
             # Assume provided length is total length.
             length_2 = length // 2
             length -= length_2
-        graph = self._random_bipartite_graph(n = length, m = length_2,
-                                             p = self._rng.choice(p),
-                                             weighted = weighted,
-                                             low = low, high = high)
+        graph = self._random_bipartite_graph(n=length, m=length_2,
+                                             p=self._rng.choice(p),
+                                             weighted=weighted,
+                                             low=low, high=high)
         if not weighted:
             return [graph, length, length_2, 0, length + length_2 + 1]
         if weighted:
@@ -596,10 +604,10 @@ class MatcherSampler(Sampler):
             else:
                 length_needle = length // 5
         elif length_needle < 0:  # randomize needle length
-            length_needle = self._rng.randint(1, high = 1 - length_needle)
+            length_needle = self._rng.randint(1, high=1 - length_needle)
         length_haystack = length - length_needle
-        needle = self._random_string(length = length_needle, chars = chars)
-        haystack = self._random_string(length = length_haystack, chars = chars)
+        needle = self._random_string(length=length_needle, chars=chars)
+        haystack = self._random_string(length=length_haystack, chars=chars)
         embed_pos = self._rng.choice(length_haystack - length_needle)
         haystack[embed_pos:embed_pos + length_needle] = needle
         return [haystack, needle]
@@ -624,12 +632,12 @@ class SegmentsSampler(Sampler):
         # Decide (with uniform probability) should this sample intersect
         coin_flip = self._rng.binomial(1, 0.5)
 
-        xs = self._random_sequence(length = 4, low = low, high = high)
-        ys = self._random_sequence(length = 4, low = low, high = high)
+        xs = self._random_sequence(length=4, low=low, high=high)
+        ys = self._random_sequence(length=4, low=low, high=high)
 
         while intersect(xs, ys) != coin_flip:
-            xs = self._random_sequence(length = 4, low = low, high = high)
-            ys = self._random_sequence(length = 4, low = low, high = high)
+            xs = self._random_sequence(length=4, low=low, high=high)
+            ys = self._random_sequence(length=4, low=low, high=high)
 
         return [xs, ys]
 
@@ -639,9 +647,10 @@ class ConvexHullSampler(Sampler):
 
     def _sample_data(self, length: int, origin_x: float = 0.,
                      origin_y: float = 0., radius: float = 2.):
-        thetas = self._random_sequence(length = length, low = 0.0, high = 2.0 * np.pi)
+        thetas = self._random_sequence(
+            length=length, low=0.0, high=2.0 * np.pi)
         rs = radius * np.sqrt(
-            self._random_sequence(length = length, low = 0.0, high = 1.0))
+            self._random_sequence(length=length, low=0.0, high=1.0))
 
         xs = rs * np.cos(thetas) + origin_x
         ys = rs * np.sin(thetas) + origin_y
@@ -679,6 +688,7 @@ SAMPLERS = {
     'bipartite_matching':            BipartiteSampler,
     'auction_matching':              BipartiteSampler,
     'auction_matching_no_hints':     BipartiteSampler,
+    'simplified_min_sum':            BipartiteSampler,
     'naive_string_matcher':          MatcherSampler,
     'kmp_matcher':                   MatcherSampler,
     'segments_intersect':            SegmentsSampler,
@@ -744,7 +754,8 @@ def _batch_hints(
             assert batched_traj[i].name == cur_sample[i].name
             cur_data = cur_sample[i].data
             cur_length = cur_data.shape[0]
-            batched_traj[i].data[:cur_length, sample_idx:sample_idx + 1] = cur_data
+            batched_traj[i].data[:cur_length,
+                                 sample_idx:sample_idx + 1] = cur_data
             if i > 0:
                 assert hint_lengths[sample_idx] == cur_length
             else:
@@ -760,7 +771,7 @@ def _subsample_data(
     """New `Trajectory` where each `DataPoint`'s data is subsampled along axis."""
     sampled_traj = []
     for dp in trajectory:
-        sampled_data = np.take(dp.data, idx, axis = axis)
+        sampled_data = np.take(dp.data, idx, axis=axis)
         sampled_traj.append(
             probing.DataPoint(dp.name, dp.location, dp.type_, sampled_data))
     return sampled_traj
@@ -775,22 +786,23 @@ def _preprocess_permutations(probes, enforce_permutations):
             continue
         assert x.location == specs.Location.NODE
         if enforce_permutations:
-            new_x, mask = probing.predecessor_to_cyclic_predecessor_and_first(x.data)
+            new_x, mask = probing.predecessor_to_cyclic_predecessor_and_first(
+                x.data)
             output.append(
                 probing.DataPoint(
-                    name = x.name,
-                    location = x.location,
-                    type_ = specs.Type.PERMUTATION_POINTER,
-                    data = new_x))
+                    name=x.name,
+                    location=x.location,
+                    type_=specs.Type.PERMUTATION_POINTER,
+                    data=new_x))
             output.append(
                 probing.DataPoint(
-                    name = x.name + '_mask',
-                    location = x.location,
-                    type_ = specs.Type.MASK_ONE,
-                    data = mask))
+                    name=x.name + '_mask',
+                    location=x.location,
+                    type_=specs.Type.MASK_ONE,
+                    data=mask))
         else:
-            output.append(probing.DataPoint(name = x.name, location = x.location,
-                                            type_ = specs.Type.POINTER, data = x.data))
+            output.append(probing.DataPoint(name=x.name, location=x.location,
+                                            type_=specs.Type.POINTER, data=x.data))
     return output
 
 
@@ -801,13 +813,16 @@ def process_permutations(spec, sample_iterator, enforce_permutations):
         while True:
             feedback = next(sample_iterator)
             features = feedback.features
-            inputs = _preprocess_permutations(features.inputs, enforce_permutations)
-            hints = _preprocess_permutations(features.hints, enforce_permutations)
-            outputs = _preprocess_permutations(feedback.outputs, enforce_permutations)
-            features = features._replace(inputs = tuple(inputs),
-                                         hints = tuple(hints))
-            feedback = feedback._replace(features = features,
-                                         outputs = outputs)
+            inputs = _preprocess_permutations(
+                features.inputs, enforce_permutations)
+            hints = _preprocess_permutations(
+                features.hints, enforce_permutations)
+            outputs = _preprocess_permutations(
+                feedback.outputs, enforce_permutations)
+            features = features._replace(inputs=tuple(inputs),
+                                         hints=tuple(hints))
+            feedback = feedback._replace(features=features,
+                                         outputs=outputs)
             yield feedback
 
     new_spec = {}
@@ -815,8 +830,10 @@ def process_permutations(spec, sample_iterator, enforce_permutations):
         if (spec[k][1] == specs.Location.NODE and
                 spec[k][2] == specs.Type.SHOULD_BE_PERMUTATION):
             if enforce_permutations:
-                new_spec[k] = (spec[k][0], spec[k][1], specs.Type.PERMUTATION_POINTER)
-                new_spec[k + '_mask'] = (spec[k][0], spec[k][1], specs.Type.MASK_ONE)
+                new_spec[k] = (spec[k][0], spec[k][1],
+                               specs.Type.PERMUTATION_POINTER)
+                new_spec[k + '_mask'] = (spec[k][0],
+                                         spec[k][1], specs.Type.MASK_ONE)
             else:
                 new_spec[k] = (spec[k][0], spec[k][1], specs.Type.POINTER)
         else:
@@ -841,11 +858,11 @@ def process_pred_as_input(spec, sample_iterator):
                     assert np.sum(np.abs(pred_h.data[1:int(features.lengths[i]), i] -
                                          pred_h.data[0, i])) == 0.0
                 inputs = tuple(features.inputs) + (
-                    probing.DataPoint(name = 'pred', location = pred_h.location,
-                                      type_ = pred_h.type_, data = pred_h.data[0]),)
-                features = features._replace(inputs = tuple(inputs),
-                                             hints = tuple(hints))
-                feedback = feedback._replace(features = features)
+                    probing.DataPoint(name='pred', location=pred_h.location,
+                                      type_=pred_h.type_, data=pred_h.data[0]),)
+                features = features._replace(inputs=tuple(inputs),
+                                             hints=tuple(hints))
+                feedback = feedback._replace(features=features)
             yield feedback
 
     new_spec = {}
@@ -884,7 +901,7 @@ def process_random_pos(sample_iterator, rng):
             inputs = feedback.features.inputs
             pos, = [x for x in inputs if x.name == 'pos']
             batch_size, num_nodes = pos.data.shape
-            unsorted = rng.uniform(size = (batch_size, num_nodes))
+            unsorted = rng.uniform(size=(batch_size, num_nodes))
             new_pos = []
             for i in range(batch_size):  # we check one example at a time.
                 # We find if there are splits in the pos sequence, marked by zeros.
@@ -898,8 +915,8 @@ def process_random_pos(sample_iterator, rng):
                                     for j in range(len(split) - 1)]))
             pos.data = np.array(new_pos)
             inputs = [(pos if x.name == 'pos' else x) for x in inputs]
-            features = feedback.features._replace(inputs = inputs)
-            feedback = feedback._replace(features = features)
+            features = feedback.features._replace(inputs=inputs)
+            feedback = feedback._replace(features=features)
             yield feedback
 
     return _iterate()

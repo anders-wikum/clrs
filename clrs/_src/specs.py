@@ -35,32 +35,33 @@ from typing import Dict, Tuple
 
 
 class Stage:
-  INPUT = 'input'
-  OUTPUT = 'output'
-  HINT = 'hint'
+    INPUT = 'input'
+    OUTPUT = 'output'
+    HINT = 'hint'
 
 
 class Location:
-  NODE = 'node'
-  EDGE = 'edge'
-  GRAPH = 'graph'
+    NODE = 'node'
+    EDGE = 'edge'
+    GRAPH = 'graph'
 
 
 class Type:
-  SCALAR = 'scalar'
-  CATEGORICAL = 'categorical'
-  MASK = 'mask'
-  MASK_ONE = 'mask_one'
-  POINTER = 'pointer'
-  SHOULD_BE_PERMUTATION = 'should_be_permutation'
-  PERMUTATION_POINTER = 'permutation_pointer'
-  SOFT_POINTER = 'soft_pointer'
+    SCALAR = 'scalar'
+    CATEGORICAL = 'categorical'
+    MASK = 'mask'
+    MASK_ONE = 'mask_one'
+    POINTER = 'pointer'
+    SHOULD_BE_PERMUTATION = 'should_be_permutation'
+    PERMUTATION_POINTER = 'permutation_pointer'
+    SOFT_POINTER = 'soft_pointer'
 
 
 class OutputClass:
-  POSITIVE = 1
-  NEGATIVE = 0
-  MASKED = -1
+    POSITIVE = 1
+    NEGATIVE = 0
+    MASKED = -1
+
 
 Spec = Dict[str, Tuple[str, str, str]]
 
@@ -109,7 +110,7 @@ CLRS_30_ALGS_SETTINGS['find_maximum_subarray_kadane'][
     'num_samples_multiplier'] = 32
 for alg in ['quickselect', 'minimum', 'binary_search', 'naive_string_matcher',
             'kmp_matcher', 'segments_intersect']:
-  CLRS_30_ALGS_SETTINGS[alg]['num_samples_multiplier'] = 64
+    CLRS_30_ALGS_SETTINGS[alg]['num_samples_multiplier'] = 64
 
 
 SPECS = types.MappingProxyType({
@@ -447,7 +448,8 @@ SPECS = types.MappingProxyType({
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
         'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
-        'buyers': (Stage.INPUT, Location.NODE, Type.MASK), # = 1 for buyers, 0 for goods
+        # = 1 for buyers, 0 for goods
+        'buyers': (Stage.INPUT, Location.NODE, Type.MASK),
         'owners': (Stage.OUTPUT, Location.NODE, Type.POINTER),
         'owners_h': (Stage.HINT, Location.NODE, Type.POINTER),
         'p': (Stage.HINT, Location.NODE, Type.SCALAR),
@@ -460,9 +462,19 @@ SPECS = types.MappingProxyType({
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
         'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
-        'buyers': (Stage.INPUT, Location.NODE, Type.MASK), # = 1 for buyers, 0 for goods
-        'self_loops': (Stage.HINT, Location.NODE, Type.POINTER), # Required for the algorithm to know how many iterations to run
+        # = 1 for buyers, 0 for goods
+        'buyers': (Stage.INPUT, Location.NODE, Type.MASK),
+        # Required for the algorithm to know how many iterations to run
+        'self_loops': (Stage.HINT, Location.NODE, Type.POINTER),
         'owners': (Stage.OUTPUT, Location.NODE, Type.POINTER)
+    },
+    'simplified_min_sum': {
+        'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
+        'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
+        'L': (Stage.INPUT, Location.NODE, Type.MASK),
+        'M_h': (Stage.HINT, Location.EDGE, Type.SCALAR),
+        'match_h': (Stage.HINT, Location.NODE, Type.POINTER),
+        'match': (Stage.OUTPUT, Location.NODE, Type.POINTER)
     },
     'bipartite_matching': {
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
