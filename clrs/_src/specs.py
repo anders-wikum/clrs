@@ -471,10 +471,12 @@ SPECS = types.MappingProxyType({
     'simplified_min_sum': {
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
+        'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
         'L': (Stage.INPUT, Location.NODE, Type.MASK),
         'M_h': (Stage.HINT, Location.EDGE, Type.SCALAR),
         'match_h': (Stage.HINT, Location.NODE, Type.POINTER),
         'match': (Stage.OUTPUT, Location.NODE, Type.POINTER)
+        # Add adj, change match
     },
     'bipartite_matching': {
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),

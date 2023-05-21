@@ -1722,20 +1722,28 @@ def simplified_min_sum(A: _Array, n: int, m: int):
         B[-m:, :n] = A.T
         return B
 
+    def _reconcile_single(M_f):
+        match_right = np.argmax(M_f, axis = 0)
+        match_left = np.argmax(M_f, axis = 1) + M_f.shape[0]
+        matching = np.concatenate((match_left, match_right))
+        return matching
+
     def _reconcile(L_pref, R_pref):
         shift = len(L_pref)
-        matching = np.full(len(L_pref) + len(R_pref), fill_value=-1)
+        matching = np.full(len(L_pref) + len(R_pref), fill_value = -1)
         for i in range(len(L_pref)):
             if R_pref[L_pref[i]] == i:
                 matching[i] = L_pref[i] + shift
                 matching[L_pref[i] + shift] = i
         return matching
 
+
     chex.assert_rank(A, 2)
     probes = probing.initialize(specs.SPECS['simplified_min_sum'])
     assert A.shape[0] == m + n
 
     A_pos = np.arange(A.shape[0])
+    adj = probing.graph(np.copy(A))
     L = np.zeros(n+m)
     L[:n] = 1
 
@@ -1745,6 +1753,7 @@ def simplified_min_sum(A: _Array, n: int, m: int):
         next_probe={
             'pos': np.copy(A_pos) * 1.0 / A.shape[0],
             'A':   np.copy(A),
+            'adj': adj,
             'L': np.copy(L)
         })
 
@@ -1752,7 +1761,7 @@ def simplified_min_sum(A: _Array, n: int, m: int):
     M_f = np.copy(A)
     M_b = np.copy(A.T)
 
-    for _ in range(25):
+    for _ in range(50):
         # One message-passing round
         prev_M_f = np.copy(M_f)
         for j in range(m):

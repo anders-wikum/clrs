@@ -21,6 +21,8 @@ import inspect
 import types
 
 from typing import Any, Callable, List, Optional, Tuple
+
+import networkx as nx
 from absl import logging
 
 from clrs._src import algorithms
@@ -205,14 +207,20 @@ class Sampler(abc.ABC):
             p = self._rng.permutation(nb_nodes)
             mat = mat[p, :][:, p]
         if weighted:
-            weights = self._rng.uniform(
-                low=low, high=high, size=(nb_nodes, nb_nodes))
-            if not directed:
-                weights *= np.transpose(weights)
-                # Add epsilon to protect underflow
-                weights = np.sqrt(weights + 1e-3)
+            weights = self._uniform_weights(
+                nb_nodes, directed=directed, low=low, high=high)
             mat = mat.astype(float) * weights
         return mat
+
+    def _uniform_weights(self, nb_nodes, directed=False, low=0.0, high=1.0):
+        weights = self._rng.uniform(
+            low=low, high=high, size=(nb_nodes, nb_nodes))
+
+        if not directed:
+            weights *= np.transpose(weights)
+            # Add epsilon to protect underflow
+            weights = np.sqrt(weights + 1e-3)
+        return weights
 
     def _random_community_graph(self, nb_nodes, k=4, p=0.5, eps=0.01,
                                 directed=False, acyclic=False, weighted=False,
