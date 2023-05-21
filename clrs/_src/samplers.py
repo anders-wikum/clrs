@@ -21,6 +21,8 @@ import inspect
 import types
 
 from typing import Any, Callable, List, Optional, Tuple
+
+import networkx as nx
 from absl import logging
 
 from clrs._src import algorithms
@@ -204,14 +206,19 @@ class Sampler(abc.ABC):
             p = self._rng.permutation(nb_nodes)
             mat = mat[p, :][:, p]
         if weighted:
-            weights = self._rng.uniform(
-                low=low, high=high, size=(nb_nodes, nb_nodes))
-            if not directed:
-                weights *= np.transpose(weights)
-                # Add epsilon to protect underflow
-                weights = np.sqrt(weights + 1e-3)
+            weights = self._uniform_weights(nb_nodes, directed=directed, low=low, high=high)
             mat = mat.astype(float) * weights
         return mat
+
+    def _uniform_weights(self, nb_nodes, directed=False, low=0.0, high=1.0):
+        weights = self._rng.uniform(
+            low = low, high = high, size = (nb_nodes, nb_nodes))
+
+        if not directed:
+            weights *= np.transpose(weights)
+            # Add epsilon to protect underflow
+            weights = np.sqrt(weights + 1e-3)
+        return weights
 
     def _random_community_graph(self, nb_nodes, k=4, p=0.5, eps=0.01,
                                 directed=False, acyclic=False, weighted=False,
@@ -249,7 +256,7 @@ class Sampler(abc.ABC):
         mat = mat[p, :][:, p]
         return mat
 
-    def _random_bipartite_graph(self, n, m, p=0.25, weighted=False, low=0.0, high=1.0):
+    def _random_bipartite_graph(self, n, m, p=0.25, weighted=False, low=0.0, high=1.0, graph_type = "er", ba_param = 7):
         """Random bipartite graph-based flow network."""
         if not weighted:
             # In the unweighted case, use a flow network with a source and sink node
@@ -264,8 +271,14 @@ class Sampler(abc.ABC):
         else:
             # In the weighted case, use a graph with n left nodes and m right nodes, each connected with probability p
             nb_nodes = n + m
-            mat = self._random_er_graph(
-                nb_nodes, p=p, directed=False, weighted=True, low=low, high=high)
+            if graph_type == "er":
+                mat = self._random_er_graph(
+                    nb_nodes, p=p, directed=False, weighted=True, low=low, high=high)
+            elif graph_type == "ba":
+                ba_graph = nx.barabasi_albert_graph(nb_nodes, ba_param)
+                mat = nx.to_numpy_array(ba_graph)
+                weights = self._uniform_weights(nb_nodes, directed=False, low=low, high=high)
+                mat = mat.astype(float) * weights
             # Remove links between owners and between goods
             mat[:n, :n] = 0
             mat[n:n+m, n:n+m] = 0
@@ -574,6 +587,8 @@ class BipartiteSampler(Sampler):
             weighted: bool = False,
             low: float = 0.,
             high: float = 1.,
+            graph_type = "er",
+            ba_param = 5,
     ):
         if length_2 is None:
             # Assume provided length is total length.
@@ -582,7 +597,9 @@ class BipartiteSampler(Sampler):
         graph = self._random_bipartite_graph(n=length, m=length_2,
                                              p=self._rng.choice(p),
                                              weighted=weighted,
-                                             low=low, high=high)
+                                             low=low, high=high,
+                                             graph_type = graph_type,
+                                             ba_param = ba_param)
         if not weighted:
             return [graph, length, length_2, 0, length + length_2 + 1]
         if weighted:
