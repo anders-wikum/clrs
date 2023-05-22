@@ -339,6 +339,43 @@ class Sampler(abc.ABC):
             mat = self._add_uniform_weights(mat, low, high)
         return self._symmetrize(mat)
 
+    def _parse_edge_txt(self, filepath: str):
+        L = []
+        R = []
+        weights = []
+        try:
+            with open(filepath, 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    n1, n2, w = line.strip('').replace('\n', '').split(',')
+                    L.append(n1)
+                    R.append(n2)
+                    weights.append(w)
+        except:
+            raise ValueError(f"File path {filepath} does not exist")
+
+        return L, R, weights
+
+    def _random_dataset_biparite_graph(self, n: int, m: int, **kwargs):
+
+        path = kwargs.get('filepath', '')
+        L, R, weights = self._parse_edge_txt(path)
+
+        left_nodes = np.random.choice(list(set(L)), n)
+        left_map = dict(zip(left_nodes, np.arange(n)))
+        right_nodes = np.random.choice(list(set(R)), m)
+        right_map = dict(zip(right_nodes, np.arange(n, n + m)))
+
+        A = np.zeros((n + m, n + m))
+        for i in range(len(L)):
+            if L[i] in left_nodes and R[i] in right_nodes:
+                left_index = left_map[L[i]]
+                right_index = right_map[R[i]]
+                A[left_index, right_index] = weights[i]
+                A[right_index, left_index] = weights[i]
+
+        return A
+
 
 def build_sampler(
         name: str,
@@ -652,6 +689,7 @@ class BipartiteSampler(Sampler):
             'ER': self._random_er_bipartite_graph,
             'FLOW': self._random_flow_bipartite_graph,
             'BA': self._random_ba_bipartite_graph,
+            'DATASET': self._random_dataset_biparite_graph,
             "RIDESHARE": self._random_rideshare_bipartite_graph
         }
 
