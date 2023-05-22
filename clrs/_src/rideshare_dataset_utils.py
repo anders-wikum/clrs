@@ -60,6 +60,7 @@ These are generated as follows:
 
 def get_data(limit = 10000):
     client = Socrata("data.cityofchicago.org", None)
+    client.timeout = 50
 
     DATASET = "2tdj-ffvb"
 
@@ -78,24 +79,13 @@ def get_data(limit = 10000):
     date_prime = datetime(year, month, day_prime, hour, minute)
     date_prev = date - timedelta(minutes = 15)
 
-    # Get all possible second stage demands
-    D2_df_list = []
-
     loc_filter_pickup = "pickup_centroid_latitude between 41.8 and 42 and pickup_centroid_longitude between -87.7 and " \
+                        "" \
+                        "" \
+                        "" \
                         "-87.6"
     loc_filter_dropoff = "dropoff_centroid_latitude between 41.8 and 42 and dropoff_centroid_longitude between -87.7 " \
                          "and -87.6"
-
-    for d in range(day_lo, day_hi):
-        date_prime = datetime(year, month, d, hour, minute) + timedelta(minutes = 15)
-        data = client.get(DATASET,
-                          where = "trip_start_timestamp = '{date}' and {loc_filter}".format(date = to_str(date_prime),
-                                                                                            loc_filter =
-                                                                                            loc_filter_pickup),
-                          limit = limit)
-        df = pd.DataFrame.from_records(data)
-        df = df[df[['pickup_centroid_location']].notnull().all(1)]
-        D2_df_list.append(df)
 
     D1_data = client.get(DATASET,
                          where = "trip_start_timestamp = '{date}' and {loc_filter}".format(date = to_str(date),
@@ -116,7 +106,7 @@ def get_data(limit = 10000):
     D1_df = D1_df[D1_df[['pickup_centroid_location']].notnull().all(1)]
     S_df = S_df[S_df[['dropoff_centroid_location']].notnull().all(1)]
 
-    return D1_df, D2_df_list, S_df
+    return D1_df, S_df
 
 
 """
@@ -155,7 +145,7 @@ Output:
 """
 
 
-def create_graph(D1_df, D2_df_list, S_df, thresh = 1.0, radius = 1000):
+def create_graph(D1_df, S_df, thresh = 1.0, radius = 1000):
     edges1 = []
     edges2_list = []
 
@@ -164,26 +154,6 @@ def create_graph(D1_df, D2_df_list, S_df, thresh = 1.0, radius = 1000):
 
     D1_pickups = list(map(lambda pt: rand_point(pt[0], pt[1], radius), D1_pickups))
     S_dropoffs = list(map(lambda pt: rand_point(pt[0], pt[1], radius), S_dropoffs))
-
-    D2_pickups_list = []
-
-    for day in range(len(D2_df_list)):
-        D2_df = D2_df_list[day]
-        D2_pickups = [p['coordinates'] for p in D2_df['pickup_centroid_location']]
-        D2_pickups = list(map(lambda pt: rand_point(pt[0], pt[1], radius), D2_pickups))
-        edges2 = []
-
-        # Each demand can match to two closest neighbors
-
-        for j in range(len(S_dropoffs)):
-            for i in range(len(D2_pickups)):
-                pickup_coord = D2_pickups[i]
-                dropoff_coord = S_dropoffs[j]
-                if distance(pickup_coord[0], pickup_coord[1], dropoff_coord[0], dropoff_coord[1]) < thresh:
-                    edges2.append((i, j))
-        edges2_list.append(edges2)
-
-        D2_pickups_list.append(D2_pickups)
 
     for j in range(len(S_dropoffs)):
         for i in range(len(D1_pickups)):
@@ -196,24 +166,53 @@ def create_graph(D1_df, D2_df_list, S_df, thresh = 1.0, radius = 1000):
 
     weights = {j: 1 for j in S}
 
-    idx = np.random.randint(0, len(edges2_list))
-
-    edges2 = edges2_list[idx]
-
     coordinate_info = {'D1': D1_pickups,
-                       'D2': D2_pickups_list[idx],
                        'S':  S_dropoffs}
 
-    return edges1, edges2, edges2_list, weights, coordinate_info
+    return edges1, weights, coordinate_info
+
+
+"""
+Returns the corresponding adjacency matrix, number of nodes on the left (n) 
+and number of nodes on the right (m)
+"""
 
 
 def construct_bipartite_matrix(edges):
     max_node_left = max([u for u, v in edges])
-    num_nodes_left = len({u for u, v in edges})
-    edge_list = [(u, v + max_node_left + 1) for u, v in edges]
-    graph = nx.from_edgelist(edge_list)
-    num_nodes_right = nx.number_of_nodes(graph) - num_nodes_left
-    return nx.to_numpy_array(graph), num_nodes_left, num_nodes_right
+    max_node_right = max([v for u, v in edges])
+    graph = np.zeros((max_node_left + 1, max_node_right + 1))
+    edges = np.array([[u,v] for u,v in edges])
+    return graph, max_node_left, max_node_right
+
+
+def sample_rideshare_graph(n, m):
+    # values in meters
+    # Distance threshold that determines if two vertices are connected by an edge
+    THRESH = 250
+
+    # Radius where vertices are randomly perturbed
+    RADIUS = 1000
+
+
+    # The limit is in function of the number of rows (i.e. the number of edges) whereas num_samples is in function of
+    # the size of the graph. Empirically, multiplying by 1.6, outputs graphs having approximately the requested number
+    # of nodes
+    num_samples = n + m
+    # Get data from Chicago API and create graph from it
+    D1_df, S_df = get_data(limit = int(1.6 * num_samples))
+    D1_df = D1_df.sample(n=int(len(D1_df)/2))
+
+    edges, _, coordinate_info = create_graph(D1_df, S_df, thresh=THRESH, radius=RADIUS)
+
+    graph, actual_n, actual_m = construct_bipartite_matrix(edges)
+    print(graph.sum())
+
+    if n <= actual_n and m <= actual_m:
+        return graph
+    else:
+        return sample_rideshare_graph(n, m)
+
 
 
 '''
@@ -238,3 +237,7 @@ def visualize(D1_coords, D2_coords, S_coords, savefig = False):
     if savefig:
         plt.savefig('{0}.png'.format("coords"), dpi = 1000)
     plt.show()
+
+if __name__ == '__main__':
+    sample_rideshare_graph(10, 10)
+

@@ -30,6 +30,9 @@ from clrs._src import probing
 from clrs._src import specs
 import jax
 import numpy as np
+import networkx as nx
+
+from clrs._src.rideshare_dataset_utils import sample_rideshare_graph
 
 _Array = np.ndarray
 _DataPoint = probing.DataPoint
@@ -206,13 +209,14 @@ class Sampler(abc.ABC):
             p = self._rng.permutation(nb_nodes)
             mat = mat[p, :][:, p]
         if weighted:
-            weights = self._uniform_weights(nb_nodes, directed=directed, low=low, high=high)
+            weights = self._uniform_weights(
+                nb_nodes, directed=directed, low=low, high=high)
             mat = mat.astype(float) * weights
         return mat
 
     def _uniform_weights(self, nb_nodes, directed=False, low=0.0, high=1.0):
         weights = self._rng.uniform(
-            low = low, high = high, size = (nb_nodes, nb_nodes))
+            low=low, high=high, size=(nb_nodes, nb_nodes))
 
         if not directed:
             weights *= np.transpose(weights)
@@ -256,33 +260,84 @@ class Sampler(abc.ABC):
         mat = mat[p, :][:, p]
         return mat
 
-    def _random_bipartite_graph(self, n, m, p=0.25, weighted=False, low=0.0, high=1.0, graph_type = "er", ba_param = 7):
+    def _symmetrize(self, adj):
+        n, m = adj.shape
+        A = np.zeros((n + m, n + m))
+        A[:n, n:] = adj
+        A[n:, :n] = adj.T
+        return A
+
+    def _add_uniform_weights(self, adj, low, high):
+        n, m = adj.shape
+        weights = self._rng.uniform(
+            low=low, high=high, size=(n, m)
+        )
+        return np.multiply(adj.astype(float), weights)
+
+    def _random_flow_bipartite_graph(self, n, m, **kwargs):
         """Random bipartite graph-based flow network."""
-        if not weighted:
-            # In the unweighted case, use a flow network with a source and sink node
-            nb_nodes = n + m + 2
-            s = 0
-            t = n + m + 1
-            mat = np.zeros((nb_nodes, nb_nodes))
-            mat[s, 1:n + 1] = 1.0  # supersource
-            mat[n + 1:n + m + 1, t] = 1.0  # supersink
-            mat[1:n + 1, n + 1:n + m +
-                1] = self._rng.binomial(1, p, size=(n, m))
-        else:
-            # In the weighted case, use a graph with n left nodes and m right nodes, each connected with probability p
-            nb_nodes = n + m
-            if graph_type == "er":
-                mat = self._random_er_graph(
-                    nb_nodes, p=p, directed=False, weighted=True, low=low, high=high)
-            elif graph_type == "ba":
-                ba_graph = nx.barabasi_albert_graph(nb_nodes, ba_param)
-                mat = nx.to_numpy_array(ba_graph)
-                weights = self._uniform_weights(nb_nodes, directed=False, low=low, high=high)
-                mat = mat.astype(float) * weights
-            # Remove links between owners and between goods
-            mat[:n, :n] = 0
-            mat[n:n+m, n:n+m] = 0
+        p = kwargs.get('p', 0.5)
+        nb_nodes = n + m + 2
+        s = 0
+        t = n + m + 1
+        mat = np.zeros((nb_nodes, nb_nodes))
+        mat[s, 1:n + 1] = 1.0  # supersource
+        mat[n + 1:n + m + 1, t] = 1.0  # supersink
+        mat[1:n + 1, n + 1:n + m +
+            1] = self._rng.binomial(1, p, size=(n, m))
         return mat
+
+    def _random_er_bipartite_graph(self, n, m, **kwargs):
+        """Random Erdos-Renyi graph."""
+        weighted = kwargs.get('weighted', False)
+        low = kwargs.get('low', 0.0),
+        high = kwargs.get('high', 1.0)
+        p = kwargs.get('p', 0.5)
+
+        mat = self._rng.binomial(1, p, size=(n, m))
+        if weighted:
+            mat = self._add_uniform_weights(mat, low, high)
+
+        return self._symmetrize(mat)
+
+    def _random_geometric_bipartite_graph(self, n: int, m: int, **kwargs):
+        ''' Generates a geometric bipartite graph by embedding [n] LHS nodes and [m]
+        RHS nodes uniformly in a unit square, and taking pairwise distances to be
+        edge weights. Edges with weight below [threshold] are removed, and
+        edge weights are scaled by a factor of [scaling] as a final step.
+        '''
+
+        threshold = kwargs.get('threshold', 0.25)
+        scaling = kwargs.get('scaling', 1.0)
+
+        red = np.random.uniform(0, 1, (n, 2))
+        blue = np.random.uniform(0, 1, (m, 2))
+
+        # n x m matrix with pairwise euclidean distances
+        dist = np.linalg.norm(red[:, None, :] - blue[None, :, :], axis=-1)
+        dist[dist < threshold] = 0
+        return scaling * self._symmetrize(dist)
+
+    def _random_ba_bipartite_graph(self, n: int, m: int, **kwargs):
+        weighted = kwargs.get('weighted', False)
+        ba_param = kwargs.get('ba_param', 5)
+        low = kwargs.get('low', 0.0),
+        high = kwargs.get('high', 1.0)
+
+        ba_graph = nx.barabasi_albert_graph(n + m, ba_param)
+        mat = nx.to_numpy_array(ba_graph)[:n, n:]
+        if weighted:
+            mat = self._add_uniform_weights(mat, low, high)
+        return self._symmetrize(mat)
+
+    def _random_rideshare_bipartite_graph(self, n: int, m: int, **kwargs):
+        weighted = kwargs.get('weighted', False)
+        low = kwargs.get('low', 0.0),
+        high = kwargs.get('high', 1.0)
+        mat = sample_rideshare_graph(n, m)
+        if weighted:
+            mat = self._add_uniform_weights(mat, low, high)
+        return self._symmetrize(mat)
 
 
 def build_sampler(
@@ -300,14 +355,16 @@ def build_sampler(
     algorithm = getattr(algorithms, name)
     sampler_class = SAMPLERS[name]
     # Ignore kwargs not accepted by the sampler.
-    sampler_args = inspect.signature(
-        sampler_class._sample_data).parameters  # pylint:disable=protected-access
-    clean_kwargs = {k: kwargs[k] for k in kwargs if k in sampler_args}
-    if set(clean_kwargs) != set(kwargs):
-        logging.warning('Ignoring kwargs %s when building sampler class %s',
-                        set(kwargs).difference(clean_kwargs), sampler_class)
+    # sampler_args = inspect.signature(
+    #     sampler_class._sample_data).parameters  # pylint:disable=protected-access
+    # clean_kwargs = {k: kwargs[k] for k in kwargs if k in sampler_args}
+    # if set(clean_kwargs) != set(kwargs):
+    #     logging.warning('Ignoring kwargs %s when building sampler class %s',
+    #                     set(kwargs).difference(clean_kwargs), sampler_class)
+
     sampler = sampler_class(algorithm, spec, num_samples, seed=seed,
-                            *args, **clean_kwargs)
+                            *args, **kwargs)
+
     return sampler, spec
 
 
@@ -583,27 +640,32 @@ class BipartiteSampler(Sampler):
             self,
             length: int,
             length_2: Optional[int] = None,
-            p: Tuple[float, ...] = (0.3,),
-            weighted: bool = False,
-            low: float = 0.,
-            high: float = 1.,
-            graph_type = "er",
-            ba_param = 5,
+            **kwargs
     ):
         if length_2 is None:
             # Assume provided length is total length.
             length_2 = length // 2
             length -= length_2
-        graph = self._random_bipartite_graph(n=length, m=length_2,
-                                             p=self._rng.choice(p),
-                                             weighted=weighted,
-                                             low=low, high=high,
-                                             graph_type = graph_type,
-                                             ba_param = ba_param)
-        if not weighted:
+
+        BIPARTITE_GENERATORS = {
+            'GEOMETRIC': self._random_geometric_bipartite_graph,
+            'ER': self._random_er_bipartite_graph,
+            'FLOW': self._random_flow_bipartite_graph,
+            'BA': self._random_ba_bipartite_graph,
+            "RIDESHARE": self._random_rideshare_bipartite_graph
+        }
+
+        generator = kwargs.get('generator', 'ER')
+        graph = BIPARTITE_GENERATORS[generator](
+            n=length,
+            m=length_2,
+            **kwargs
+        )
+
+        if generator == 'FLOW':
             return [graph, length, length_2, 0, length + length_2 + 1]
-        if weighted:
-            return [graph, length, length_2]
+
+        return [graph, length, length_2]
 
 
 class MatcherSampler(Sampler):
