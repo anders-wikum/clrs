@@ -209,7 +209,7 @@ def sample_rideshare_graph(n, m):
     print(graph.sum())
 
     if n <= actual_n and m <= actual_m:
-        return graph
+        return graph[:n, :m]
     else:
         return sample_rideshare_graph(n, m)
 
@@ -239,5 +239,5 @@ def visualize(D1_coords, D2_coords, S_coords, savefig = False):
     plt.show()
 
 if __name__ == '__main__':
-    sample_rideshare_graph(10, 10)
+    print(sample_rideshare_graph(10, 10).shape)
 

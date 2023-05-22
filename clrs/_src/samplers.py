@@ -702,7 +702,6 @@ class BipartiteSampler(Sampler):
 
         if generator == 'FLOW':
             return [graph, length, length_2, 0, length + length_2 + 1]
-
         return [graph, length, length_2]
 
 
