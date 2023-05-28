@@ -72,7 +72,7 @@ class Sampler(abc.ABC):
             self,
             algorithm: Algorithm,
             spec: specs.Spec,
-            num_samples: int,
+            sampler_spec: int,
             *args,
             seed: Optional[int] = None,
             **kwargs,
@@ -94,45 +94,67 @@ class Sampler(abc.ABC):
         # Use `RandomState` to ensure deterministic sampling across Numpy versions.
         self._rng = np.random.RandomState(seed)
         self._spec = spec
-        self._num_samples = num_samples
+        try:
+            self._num_samples = sampler_spec['num_samples']
+        except:
+            raise ValueError("Invalid sampler spec: missing [num_samples]")
+        self._sampler_spec = sampler_spec
         self._algorithm = algorithm
         self._args = args
         self._kwargs = kwargs
 
-        if num_samples < 0:
-            logging.warning('Sampling dataset on-the-fly, unlimited samples.')
-            # Just get an initial estimate of max hint length
-            self.max_steps = -1
-            for _ in range(1000):
-                data = self._sample_data(*args, **kwargs)
-                _, probes = algorithm(*data)
-                _, _, hint = probing.split_stages(probes, spec)
-                for dp in hint:
-                    assert dp.data.shape[1] == 1  # batching axis
-                    if dp.data.shape[0] > self.max_steps:
-                        self.max_steps = dp.data.shape[0]
-        else:
-            logging.info('Creating a dataset with %i samples.', num_samples)
-            (self._inputs, self._outputs, self._hints,
-             self._lengths) = self._make_batch(num_samples, spec, 0, algorithm, *args,
-                                               **kwargs)
+        # if num_samples < 0:
+        #     logging.warning('Sampling dataset on-the-fly, unlimited samples.')
+        #     # Just get an initial estimate of max hint length
+        #     self.max_steps = -1
+        #     for _ in range(1000):
+        #         data = self._sample_data(*args, **kwargs)
+        #         _, probes = algorithm(*data)
+        #         _, _, hint = probing.split_stages(probes, spec)
+        #         for dp in hint:
+        #             assert dp.data.shape[1] == 1  # batching axis
+        #             if dp.data.shape[0] > self.max_steps:
+        #                 self.max_steps = dp.data.shape[0]
+        # else:
 
-    def _make_batch(self, num_samples: int, spec: specs.Spec, min_length: int,
+        logging.info('Creating a dataset with %i samples.',  self._num_samples)
+        (self._inputs, self._outputs, self._hints,
+         self._lengths) = self._make_batch(spec, 0, algorithm, *args,
+                                           **kwargs)
+
+    def _make_batch(self, spec: specs.Spec, min_length: int,
                     algorithm: Algorithm, *args, **kwargs):
         """Generate a batch of data."""
         inputs = []
         outputs = []
         hints = []
 
-        for _ in range(num_samples):
-            data = self._sample_data(*args, **kwargs)
-            _, probes = algorithm(*data)
-            inp, outp, hint = probing.split_stages(probes, spec)
-            inputs.append(inp)
-            outputs.append(outp)
-            hints.append(hint)
-            if len(hints) % 1000 == 0:
-                logging.info('%i samples created', len(hints))
+        for schematic in self._sampler_spec['schematics']:
+            num_samples = int(
+                self._sampler_spec['num_samples'] * schematic['proportion']
+            )
+
+            schematic_kwargs = {
+                key: val for (key, val) in schematic.items()
+                if key != 'kwargs'
+            }
+            generator_kwargs = schematic.get('kwargs', dict())
+
+            augment_kwargs = {
+                **generator_kwargs,
+                **schematic_kwargs
+            }
+            kwargs = {**kwargs, **augment_kwargs}
+
+            for _ in range(num_samples):
+                data = self._sample_data(*args, **kwargs)
+                _, probes = algorithm(*data)
+                inp, outp, hint = probing.split_stages(probes, spec)
+                inputs.append(inp)
+                outputs.append(outp)
+                hints.append(hint)
+                if len(hints) % 1000 == 0:
+                    logging.info('%i samples created', len(hints))
 
         # Batch and pad trajectories to max(T).
         inputs = _batch_io(inputs)
@@ -361,9 +383,9 @@ class Sampler(abc.ABC):
         path = kwargs.get('filepath', '')
         L, R, weights = self._parse_edge_txt(path)
 
-        left_nodes = np.random.choice(list(set(L)), n)
+        left_nodes = list(np.random.choice(list(set(L)), n))
         left_map = dict(zip(left_nodes, np.arange(n)))
-        right_nodes = np.random.choice(list(set(R)), m)
+        right_nodes = list(np.random.choice(list(set(R)), m))
         right_map = dict(zip(right_nodes, np.arange(n, n + m)))
 
         A = np.zeros((n + m, n + m))
@@ -379,7 +401,7 @@ class Sampler(abc.ABC):
 
 def build_sampler(
         name: str,
-        num_samples: int,
+        sampler_spec: int,
         *args,
         seed: Optional[int] = None,
         **kwargs,
@@ -391,15 +413,8 @@ def build_sampler(
     spec = specs.SPECS[name]
     algorithm = getattr(algorithms, name)
     sampler_class = SAMPLERS[name]
-    # Ignore kwargs not accepted by the sampler.
-    # sampler_args = inspect.signature(
-    #     sampler_class._sample_data).parameters  # pylint:disable=protected-access
-    # clean_kwargs = {k: kwargs[k] for k in kwargs if k in sampler_args}
-    # if set(clean_kwargs) != set(kwargs):
-    #     logging.warning('Ignoring kwargs %s when building sampler class %s',
-    #                     set(kwargs).difference(clean_kwargs), sampler_class)
 
-    sampler = sampler_class(algorithm, spec, num_samples, seed=seed,
+    sampler = sampler_class(algorithm, spec, sampler_spec, seed=seed,
                             *args, **kwargs)
 
     return sampler, spec
