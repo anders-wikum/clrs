@@ -179,38 +179,44 @@ and number of nodes on the right (m)
 
 
 def construct_bipartite_matrix(edges):
+    if len(edges) == 0:
+        return None, 0, 0
     max_node_left = max([u for u, v in edges])
     max_node_right = max([v for u, v in edges])
     graph = np.zeros((max_node_left + 1, max_node_right + 1))
     edges = np.array([[u,v] for u,v in edges])
+    graph[tuple(edges.T)] = 1
     return graph, max_node_left, max_node_right
 
 
 def sample_rideshare_graph(n, m):
     # values in meters
     # Distance threshold that determines if two vertices are connected by an edge
-    THRESH = 250
+    THRESH = 750 # TODO modified 250 -> 750 to make the graph less sparse
 
     # Radius where vertices are randomly perturbed
     RADIUS = 1000
 
 
     # The limit is in function of the number of rows (i.e. the number of edges) whereas num_samples is in function of
-    # the size of the graph. Empirically, multiplying by 1.6, outputs graphs having approximately the requested number
+    # the size of the graph. Empirically, multiplying by 1.8, outputs graphs having approximately the requested number
     # of nodes
     num_samples = n + m
     # Get data from Chicago API and create graph from it
-    D1_df, S_df = get_data(limit = int(1.6 * num_samples))
+    D1_df, S_df = get_data(limit = int(1.8 * num_samples))
     D1_df = D1_df.sample(n=int(len(D1_df)/2))
 
     edges, _, coordinate_info = create_graph(D1_df, S_df, thresh=THRESH, radius=RADIUS)
 
     graph, actual_n, actual_m = construct_bipartite_matrix(edges)
-    print(graph.sum())
 
     if n <= actual_n and m <= actual_m:
-        return graph[:n, :m]
+        print(f"before: {graph.sum()}, actual (n,m): {(actual_n, actual_m)}")
+        graph = graph[-n:, -m:]
+        print(f"after: {graph.sum()}")
+        return graph
     else:
+        print("Dataset too small, fetching again")
         return sample_rideshare_graph(n, m)
 
 
@@ -239,5 +245,5 @@ def visualize(D1_coords, D2_coords, S_coords, savefig = False):
     plt.show()
 
 if __name__ == '__main__':
-    print(sample_rideshare_graph(10, 10).shape)
+    print(sample_rideshare_graph(8, 8).shape)
 

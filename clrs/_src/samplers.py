@@ -356,7 +356,7 @@ class Sampler(abc.ABC):
 
         return L, R, weights
 
-    def _random_dataset_biparite_graph(self, n: int, m: int, **kwargs):
+    def _random_dataset_bipartite_graph(self, n: int, m: int, **kwargs):
 
         path = kwargs.get('filepath', '')
         L, R, weights = self._parse_edge_txt(path)
@@ -689,7 +689,7 @@ class BipartiteSampler(Sampler):
             'ER': self._random_er_bipartite_graph,
             'FLOW': self._random_flow_bipartite_graph,
             'BA': self._random_ba_bipartite_graph,
-            'DATASET': self._random_dataset_biparite_graph,
+            'DATASET': self._random_dataset_bipartite_graph,
             "RIDESHARE": self._random_rideshare_bipartite_graph
         }
 

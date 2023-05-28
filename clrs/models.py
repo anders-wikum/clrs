@@ -21,12 +21,14 @@ from clrs._src.nets import Net
 from clrs._src.nets import NetChunked
 from clrs._src.processors import GAT
 from clrs._src.processors import MPNN
+from clrs._src.processors import MPNNDoubleMax
 
 __all__ = (
     "BaselineModel",
     "BaselineModelChunked",
     "GAT",
     "MPNN",
+    "MPNNDoubleMax", #TODO edited
     "Net",
     "NetChunked",
 )
