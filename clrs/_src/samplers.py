@@ -331,9 +331,43 @@ class Sampler(abc.ABC):
 
         threshold = kwargs.get('threshold', 0.25)
         scaling = kwargs.get('scaling', 1.0)
+        partition = kwargs.get('partition', 5)
+        width = 1 / partition
+        power = kwargs.get('power', 1)
 
-        red = np.random.uniform(0, 1, (n, 2))
-        blue = np.random.uniform(0, 1, (m, 2))
+        red_rates = np.random.power(power, (partition, partition))
+        blue_rates = np.random.power(power, (partition, partition))
+        red_rates = (red_rates / np.sum(red_rates)).flatten()
+        blue_rates = (blue_rates / np.sum(blue_rates)).flatten()
+
+        bounds = [
+            ((1 - (i + 1) * width, 1 - i * width),
+             (1 - (j + 1) * width, 1 - j * width))
+            for j in np.arange(partition)
+            for i in np.arange(partition)
+        ]
+
+        red_ind = np.random.choice(
+            np.arange(partition * partition), n, p=red_rates)
+        blue_ind = np.random.choice(
+            np.arange(partition * partition), m, p=blue_rates)
+
+        red = []
+        blue = []
+
+        for i in red_ind:
+            red.append(
+                [np.random.uniform(*bounds[i][0]),
+                 np.random.uniform(*bounds[i][1])]
+            )
+        for i in blue_ind:
+            blue.append(
+                [np.random.uniform(*bounds[i][0]),
+                 np.random.uniform(*bounds[i][1])]
+            )
+
+        red = np.array(red)
+        blue = np.array(blue)
 
         # n x m matrix with pairwise euclidean distances
         dist = np.linalg.norm(red[:, None, :] - blue[None, :, :], axis=-1)

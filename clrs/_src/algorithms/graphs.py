@@ -37,6 +37,7 @@ See "Introduction to Algorithms" 3ed (CLRS3) for more information.
 
 
 from typing import Tuple
+from scipy.optimize import linear_sum_assignment
 
 import chex
 from clrs._src import probing
@@ -1723,20 +1724,19 @@ def simplified_min_sum(A: _Array, n: int, m: int):
         return B
 
     def _reconcile_single(M_f):
-        match_right = np.argmax(M_f, axis = 0)
-        match_left = np.argmax(M_f, axis = 1) + M_f.shape[0]
+        match_right = np.argmax(M_f, axis=0)
+        match_left = np.argmax(M_f, axis=1) + M_f.shape[0]
         matching = np.concatenate((match_left, match_right))
         return matching
 
     def _reconcile(L_pref, R_pref):
         shift = len(L_pref)
-        matching = np.full(len(L_pref) + len(R_pref), fill_value = -1)
+        matching = np.full(len(L_pref) + len(R_pref), fill_value=-1)
         for i in range(len(L_pref)):
             if R_pref[L_pref[i]] == i:
                 matching[i] = L_pref[i] + shift
                 matching[L_pref[i] + shift] = i
         return matching
-
 
     chex.assert_rank(A, 2)
     probes = probing.initialize(specs.SPECS['simplified_min_sum'])
@@ -1788,15 +1788,22 @@ def simplified_min_sum(A: _Array, n: int, m: int):
 
     matching = _reconcile(np.argmax(M_f, axis=1), np.argmax(M_f, axis=0))
 
+    # Supervise final step with optimal
+    row_ind, col_ind = linear_sum_assignment(A, maximize=True)
+    opt_matching = np.full(n + m, fill_value=-1)
+    for (i, j) in zip(row_ind, col_ind):
+        opt_matching[i] = j + n
+        opt_matching[j + n] = i
+
     probing.push(
         probes,
         specs.Stage.OUTPUT,
         next_probe={
-            'match': np.copy(matching)
+            'match': np.copy(opt_matching)
         })
 
     probing.finalize(probes)
-    return matching, probes
+    return opt_matching, probes
 
 
 def auction_matching_no_hints(A: _Array, n: int, m: int) -> _Out:
