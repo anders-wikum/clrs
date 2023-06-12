@@ -438,6 +438,7 @@ class PGN(Processor):
             maxarg = jnp.where(jnp.expand_dims(adj_mat, -1),
                                msgs,
                                -BIG_NUMBER)
+
             maxarg_d = jnp.where(jnp.expand_dims(adj_mat, - 1),
                                  msgs_d,
                                  -BIG_NUMBER)

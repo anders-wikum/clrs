@@ -1821,10 +1821,9 @@ def auction_matching_no_hints(A: _Array, n: int, m: int) -> _Out:
             'adj': adj,
             'buyers': np.copy(buyers)
         })
-
+    owners = np.arange(n+m)
     in_queue = np.concatenate((np.ones(n), np.zeros(m)))
     p = np.zeros(n + m)
-    owners = np.arange(n + m)
 
     queue = deque(np.arange(n))
     delta = 1 / (m + 1)
