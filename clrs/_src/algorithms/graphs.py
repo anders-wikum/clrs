@@ -1806,69 +1806,40 @@ def simplified_min_sum(A: _Array, n: int, m: int):
     return opt_matching, probes
 
 
-def auction_matching_no_hints(A: _Array, n: int, m: int) -> _Out:
-    """Same as auction_matching algorithm but returns no hints"""
-    """Auction weighted bipartite matching (Demange, Gale, Sotomayor, 1986)."""
+def online_testing(A: _Array) -> _Out:
+    """Testing if we can send different input probes"""
     chex.assert_rank(A, 2)
-    probes = probing.initialize(specs.SPECS['auction_matching_no_hints'])
-    assert A.shape[0] == m + n
-
-    A_pos = np.arange(A.shape[0])
-    self_loops = np.copy(A_pos)
-    adj = probing.graph(np.copy(A))
-    buyers = np.zeros(n+m)
-    buyers[:n] = 1
+    probes = probing.initialize(specs.SPECS['online_testing'])
+    value = np.random.uniform(0, 1, A.shape[0])
+    value = np.where(value < 0.5, 0, 1)
 
     probing.push(
         probes,
         specs.Stage.INPUT,
         next_probe={
-            'pos': np.copy(A_pos) * 1.0 / A.shape[0],
-            'A':   np.copy(A),
-            'adj': adj,
-            'buyers': np.copy(buyers)
+            'A': np.copy(A),
+            'value_in': value
         })
-    owners = np.arange(n+m)
-    in_queue = np.concatenate((np.ones(n), np.zeros(m)))
-    p = np.zeros(n + m)
 
-    queue = deque(np.arange(n))
-    delta = 1 / (m + 1)
 
-    while queue:
-        i = queue.popleft()
-        max_inc_value = -1
-        j_star = None
-        for j in range(n, n + m):
-            if A[i, j] != 0:
-                inc_value = A[i, j] - p[j]
-                if inc_value > max_inc_value:
-                    j_star = j
-                    max_inc_value = inc_value
-
-        if max_inc_value >= 0:
-            # Only enque owner if it is well-defined (its owner is not itself)
-            if owners[j_star] != j_star:
-                queue.append(owners[j_star])
-                in_queue[owners[j_star]] = 1
-            owners[j_star] = i
-            owners[i] = j_star
-            in_queue[i] = 0
-            p[j_star] += delta
-
+    for i in range(50):
+        temp = np.random.uniform(0, 1, A.shape[0])
+        temp = np.where(temp < 0.5, 0, 1)
+        value *= 0
+        value += temp
         probing.push(
             probes,
             specs.Stage.HINT,
             next_probe={
-                'self_loops': np.copy(self_loops)
+                'value_h': np.copy(value)
             })
 
     probing.push(
         probes,
         specs.Stage.OUTPUT,
         next_probe={
-            'owners': np.copy(owners)
+            'value': np.copy(value)
         })
 
     probing.finalize(probes)
-    return owners, probes
+    return value, probes

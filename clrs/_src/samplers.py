@@ -691,6 +691,7 @@ class FloydWarshallSampler(Sampler):
             p: Tuple[float, ...] = (0.5,),
             low: float = 0.,
             high: float = 1.,
+            proportion: float = 0,  # not used but for compatibility with the sampling method
     ):
         graph = self._random_er_graph(
             nb_nodes=length,
@@ -852,8 +853,8 @@ SAMPLERS = {
     'floyd_warshall':                FloydWarshallSampler,
     'bipartite_matching':            BipartiteSampler,
     'auction_matching':              BipartiteSampler,
-    'auction_matching_no_hints':     BipartiteSampler,
     'simplified_min_sum':            BipartiteSampler,
+    'online_testing':                FloydWarshallSampler, # Is just a weighted undirected ER graph
     'naive_string_matcher':          MatcherSampler,
     'kmp_matcher':                   MatcherSampler,
     'segments_intersect':            SegmentsSampler,

@@ -458,16 +458,6 @@ SPECS = types.MappingProxyType({
         # Mask for goods/buyers
         # Buyer and good dimensions
     },
-    'auction_matching_no_hints': {
-        'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
-        'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
-        'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
-        # = 1 for buyers, 0 for goods
-        'buyers': (Stage.INPUT, Location.NODE, Type.MASK),
-        # Required for the algorithm to know how many iterations to run
-        'self_loops': (Stage.HINT, Location.NODE, Type.POINTER),
-        'owners': (Stage.OUTPUT, Location.NODE, Type.POINTER)
-    },
     'simplified_min_sum': {
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
@@ -493,6 +483,12 @@ SPECS = types.MappingProxyType({
         'pi': (Stage.HINT, Location.NODE, Type.POINTER),
         'u': (Stage.HINT, Location.NODE, Type.MASK_ONE),
         'phase': (Stage.HINT, Location.GRAPH, Type.MASK)
+    },
+    'online_testing': {
+        'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
+        'value_in': (Stage.INPUT, Location.NODE, Type.SCALAR),
+        'value_h': (Stage.HINT, Location.NODE, Type.SCALAR),
+        'value': (Stage.OUTPUT, Location.NODE, Type.SCALAR)
     },
     'naive_string_matcher': {
         'string': (Stage.INPUT, Location.NODE, Type.MASK),
