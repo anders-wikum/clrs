@@ -494,6 +494,16 @@ SPECS = types.MappingProxyType({
         'u': (Stage.HINT, Location.NODE, Type.MASK_ONE),
         'phase': (Stage.HINT, Location.GRAPH, Type.MASK)
     },
+    'online_bipartite_matching': {
+        'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
+        'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
+        'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
+        'L': (Stage.INPUT, Location.NODE, Type.MASK),
+        'value_to_go_h': (Stage.HINT, Location.NODE, Type.SCALAR),
+        'L_h': (Stage.HINT, Location.NODE, Type.MASK),
+        'match_h': (Stage.HINT, Location.NODE, Type.POINTER),
+        'match': (Stage.OUTPUT, Location.NODE, Type.POINTER)
+    },
     'naive_string_matcher': {
         'string': (Stage.INPUT, Location.NODE, Type.MASK),
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
