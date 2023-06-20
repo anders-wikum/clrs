@@ -38,6 +38,7 @@ See "Introduction to Algorithms" 3ed (CLRS3) for more information.
 
 from typing import Tuple
 from scipy.optimize import linear_sum_assignment
+from itertools import chain, combinations
 
 import chex
 from clrs._src import probing
@@ -1843,3 +1844,140 @@ def online_testing(A: _Array) -> _Out:
 
     probing.finalize(probes)
     return value, probes
+
+
+def online_bipartite_matching(A: _Array, p: _Array, n: int, m: int) -> _Out:
+
+    def _powerset(iterable):
+        "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+        s = list(iterable)
+        powerset = chain.from_iterable(combinations(s, r)
+                                       for r in range(len(s)+1))
+        return list(map(set, powerset))
+
+    def _diff(S, u):
+        return S.difference(set([u]))
+
+    def opt_dp(A: _Array, p: _Array, m: int, n: int):
+        '''
+        Computes the value-to-go for all timesteps t=1..[n] and for
+        all subsets S of offline nodes {1, ..., [m]}, according to
+        online arrival probabilities [p] and underlying graph
+        adjacency matrix [A].
+        '''
+        def _neighbor_max_argmax(A: _Array, S: set, t: int):
+            argmax = -1
+            max_val = cache[(frozenset(S), t + 1)][0]
+            for u in S:
+                val = cache[(frozenset(_diff(S, u)), t + 1)][0] + A[m + t, u]
+                if val > max_val:
+                    argmax = u
+                    max_val = val
+
+            return max_val, argmax
+
+        def _value_to_go(A: _Array, S: set, t: int):
+            '''
+            Computes the value-to-go of unmatched node set [S] starting
+            at online node [t] for the graph defined by the adjacency matrix
+            [A], caching all intermediate results.
+            '''
+            S_key = frozenset(S)
+            if (S_key, t + 1) not in cache:
+                cache[(S_key, t + 1)] = _value_to_go(A, S, t + 1)
+
+            S_diffs = [_diff(S, u) for u in S]
+            for S_diff in S_diffs:
+                S_diff_key = frozenset(S_diff)
+                if (S_diff_key, t + 1) not in cache:
+                    cache[(S_diff_key, t + 1)] = _value_to_go(A, S_diff, t + 1)
+
+            max_val, argmax = _neighbor_max_argmax(A, S, t)
+
+            exp_value_to_go = (1 - p[t]) * cache[(S_key, t + 1)][0] + \
+                p[t] * max([cache[(S_key, t + 1)][0], max_val])
+
+            return (exp_value_to_go, argmax)
+
+        offline_nodes = np.arange(m)
+        T = n
+        cache = {}
+
+        # Set boundary conditions
+        for t in np.arange(T):
+            cache[(frozenset(), t)] = (0, None)
+        for subset in _powerset(offline_nodes):
+            cache[frozenset(subset), T] = (0, None)
+
+        # Cache all relevant DP quantities
+        cache[(frozenset(offline_nodes), 0)] = _value_to_go(
+            A, set(offline_nodes), 0)
+        return cache
+
+    def _coin_flip(p):
+        return p > np.random.uniform(0, 1)
+
+    chex.assert_rank(A, 2)
+    probes = probing.initialize(specs.SPECS['online_bipartite_matching'])
+    assert A.shape[0] == m + n
+
+    A_pos = np.arange(A.shape[0])
+    adj = probing.graph(np.copy(A))
+    L = np.zeros(n+m)
+    L[:m] = 1
+
+    probing.push(
+        probes,
+        specs.Stage.INPUT,
+        next_probe={
+            'pos': np.copy(A_pos) * 1.0 / A.shape[0],
+            'A':   np.copy(A),
+            'adj': adj,
+            'L': np.copy(L)
+        })
+
+    offline_nodes = np.arange(m)
+    T = n
+
+    # Compute all values-to-go up front
+    cache = opt_dp(A, p, m, n)
+
+    # Construct online optimal and hints from cached values-to-go
+    owners = np.full(m + n, fill_value=-1)
+    S = set(offline_nodes)
+    coin_flips = [_coin_flip(p[t]) for t in range(n)]
+
+    for t in np.arange(T):
+        if coin_flips[t]:
+            hint = np.zeros(m + 1)
+            # Zero index corresponds to not matching
+            hint[0] = cache[(frozenset(S), t + 1)][0]
+            for u in S:
+                hint[u + 1] = cache[(frozenset(_diff(S, u)),
+                                     t + 1)][0] + A[m + t, u]
+
+            matched_node = cache[(frozenset(S), t)][1]
+            if matched_node >= 0:
+                owners[m + t] = matched_node
+                owners[matched_node] = m + t
+                S.remove(matched_node)
+                L[matched_node] = 0
+
+            probing.push(
+                probes,
+                specs.Stage.HINT,
+                next_probe={
+                    'value_to_go': np.copy(hint),
+                    'match_h': np.copy(owners),
+                    'L_h': np.copy(L)
+                })
+
+    probing.push(
+        probes,
+        specs.Stage.OUTPUT,
+        next_probe={
+            'match': np.copy(owners)
+        })
+
+    probing.finalize(probes)
+    return owners, probes
