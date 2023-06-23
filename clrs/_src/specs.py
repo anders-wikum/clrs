@@ -488,9 +488,11 @@ SPECS = types.MappingProxyType({
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
         'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
-        'L': (Stage.INPUT, Location.NODE, Type.MASK),
+        'p': (Stage.INPUT, Location.NODE, Type.SCALAR), # vector of probabilities of each node appearing
+        'L': (Stage.INPUT, Location.NODE, Type.MASK), # 1 for the left/offline nodes and the no match node, 0 for the right/online nodes
         'value_to_go_h': (Stage.HINT, Location.NODE, Type.SCALAR),
-        'L_h': (Stage.HINT, Location.NODE, Type.MASK),
+        'L_h': (Stage.HINT, Location.NODE, Type.MASK), # 1 for the left nodes and the nodes that have been matched
+        # (except for the 0 node which is always 0)
         'match_h': (Stage.HINT, Location.NODE, Type.POINTER),
         'match': (Stage.OUTPUT, Location.NODE, Type.POINTER)
     },

@@ -1846,7 +1846,9 @@ def online_testing(A: _Array) -> _Out:
     return value, probes
 
 
-def online_bipartite_matching(A: _Array, p: _Array, n: int, m: int) -> _Out:
+def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
+    # m left/offline nodes, n right/online nodes, 1 "no match node" at the end
+    no_match_node = m + n
 
     def _powerset(iterable):
         "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
@@ -1866,7 +1868,7 @@ def online_bipartite_matching(A: _Array, p: _Array, n: int, m: int) -> _Out:
         adjacency matrix [A].
         '''
         def _neighbor_max_argmax(A: _Array, S: set, t: int):
-            argmax = -1
+            argmax = no_match_node
             max_val = cache[(frozenset(S), t + 1)][0]
             for u in S:
                 val = cache[(frozenset(_diff(S, u)), t + 1)][0] + A[m + t, u]
@@ -1895,7 +1897,8 @@ def online_bipartite_matching(A: _Array, p: _Array, n: int, m: int) -> _Out:
             max_val, argmax = _neighbor_max_argmax(A, S, t)
 
             exp_value_to_go = (1 - p[t]) * cache[(S_key, t + 1)][0] + \
-                p[t] * max([cache[(S_key, t + 1)][0], max_val])
+                p[t] * max([cache[(S_key, t + 1)][0], max_val]) #TODO not sure the max is necessary here, I think that
+            # neighbor_max_argmax already returns the max of both values
 
             return (exp_value_to_go, argmax)
 
@@ -1915,24 +1918,30 @@ def online_bipartite_matching(A: _Array, p: _Array, n: int, m: int) -> _Out:
         return cache
 
     def _coin_flip(p):
+        # Returns True with probability p
         return p > np.random.uniform(0, 1)
 
     chex.assert_rank(A, 2)
     probes = probing.initialize(specs.SPECS['online_bipartite_matching'])
-    assert A.shape[0] == m + n
+    assert A.shape[0] == m + n + 1
 
     A_pos = np.arange(A.shape[0])
     adj = probing.graph(np.copy(A))
-    L = np.zeros(n+m)
-    L[:m] = 1
+    L = np.zeros(n+m+1)
+    L[:m] = 1 # TODO in the other code, this was an n. Here all the offline nodes have a 1 => available
+    L[no_match_node] = 1 # The no match node is always available
+    # Probabilities is the full probability array, p is only the values we care about (i.e. the values for online nodes)
+    probabilities = np.copy(p)
+    p = p[m:m+n] # only keeping the probabilities for online nodes
 
     probing.push(
         probes,
         specs.Stage.INPUT,
         next_probe={
-            'pos': np.copy(A_pos) * 1.0 / A.shape[0],
+            'pos': np.copy(A_pos) * 1.0 / (A.shape[0] - 1),
             'A':   np.copy(A),
             'adj': adj,
+            'p': np.copy(probabilities),
             'L': np.copy(L)
         })
 
@@ -1943,22 +1952,25 @@ def online_bipartite_matching(A: _Array, p: _Array, n: int, m: int) -> _Out:
     cache = opt_dp(A, p, m, n)
 
     # Construct online optimal and hints from cached values-to-go
-    owners = np.full(m + n, fill_value=-1)
+    owners = np.arange(m+n+1) # if not matched, are matched to themselves TODO should this be matched to "non-match" node
+    # at the start? Reasoning for why not is that it would then be confusing: you can non-match for 2 reasons, not having arrived yet and having arrived but not being matched
     S = set(offline_nodes)
     coin_flips = [_coin_flip(p[t]) for t in range(n)]
 
     for t in np.arange(T):
         if coin_flips[t]:
-            hint = np.zeros(m + 1)
-            # Zero index corresponds to not matching
-            hint[0] = cache[(frozenset(S), t + 1)][0]
+            hint = np.zeros(m + n + 1)
+            # Last index corresponds to not matching
+            hint[no_match_node] = cache[(frozenset(S), t + 1)][0]
             for u in S:
                 hint[u + 1] = cache[(frozenset(_diff(S, u)),
                                      t + 1)][0] + A[m + t, u]
 
             matched_node = cache[(frozenset(S), t)][1]
-            if matched_node >= 0:
-                owners[m + t] = matched_node
+
+            owners[m + t] = matched_node
+            if matched_node != no_match_node:
+                # only reverse if is a match (the no match node could be "matched" to several online nodes)
                 owners[matched_node] = m + t
                 S.remove(matched_node)
                 L[matched_node] = 0
@@ -1967,7 +1979,7 @@ def online_bipartite_matching(A: _Array, p: _Array, n: int, m: int) -> _Out:
                 probes,
                 specs.Stage.HINT,
                 next_probe={
-                    'value_to_go': np.copy(hint),
+                    'value_to_go_h': np.copy(hint),
                     'match_h': np.copy(owners),
                     'L_h': np.copy(L)
                 })
