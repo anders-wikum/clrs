@@ -1963,7 +1963,7 @@ def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
             # Last index corresponds to not matching
             hint[no_match_node] = cache[(frozenset(S), t + 1)][0]
             for u in S:
-                hint[u + 1] = cache[(frozenset(_diff(S, u)),
+                hint[u] = cache[(frozenset(_diff(S, u)),
                                      t + 1)][0] + A[m + t, u]
 
             matched_node = cache[(frozenset(S), t)][1]
@@ -1974,7 +1974,6 @@ def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
                 owners[matched_node] = m + t
                 S.remove(matched_node)
                 L[matched_node] = 0
-
             probing.push(
                 probes,
                 specs.Stage.HINT,
