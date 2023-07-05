@@ -488,12 +488,15 @@ SPECS = types.MappingProxyType({
         'pos': (Stage.INPUT, Location.NODE, Type.SCALAR),
         'A': (Stage.INPUT, Location.EDGE, Type.SCALAR),
         'adj': (Stage.INPUT, Location.EDGE, Type.MASK),
-        'p': (Stage.INPUT, Location.NODE, Type.SCALAR), # vector of probabilities of each node appearing
+        'p': (Stage.INPUT, Location.NODE, Type.SCALAR), # vector of probabilities of each node appearing. When a node v
+        # arrives, flip a coin, if 1 => p[v] = 1, 0 => p[v] = 0
         'L': (Stage.INPUT, Location.NODE, Type.MASK), # 1 for the left/offline nodes and the no match node, 0 for the right/online nodes
         'value_to_go_h': (Stage.HINT, Location.NODE, Type.SCALAR),
         'L_h': (Stage.HINT, Location.NODE, Type.MASK), # 1 for the left nodes and the nodes that have been matched
         # (except for the 0 node which is always 0)
-        'match_h': (Stage.HINT, Location.NODE, Type.POINTER),
+        'match_h': (Stage.HINT, Location.NODE, Type.MASK_ONE), # 1 for the node that was matched, 0 otherwise (should be a hard version of the value to go)
+        'modified_node': (Stage.HINT, Location.NODE, Type.MASK_ONE), # One-hot encoding of the node currently modified
+        # (mostly for reconstruction but is clearly learnable from inputs)
         'match': (Stage.OUTPUT, Location.NODE, Type.POINTER)
     },
     'online_testing': {

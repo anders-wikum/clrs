@@ -1941,7 +1941,7 @@ def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
             'pos': np.copy(A_pos) * 1.0 / (A.shape[0] - 1),
             'A':   np.copy(A),
             'adj': adj,
-            'p': np.copy(probabilities),
+            'p': probabilities,
             'L': np.copy(L)
         })
 
@@ -1958,7 +1958,10 @@ def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
     coin_flips = [_coin_flip(p[t]) for t in range(n)]
 
     for t in np.arange(T):
-        if coin_flips[t]:
+        # If S is empty, no need to continue
+        if len(S) > 0 and coin_flips[t]:
+            # Sending information to the GNN that the vertex has arrived
+            probabilities[m + t] = 1
             hint = np.zeros(m + n + 1)
             # Last index corresponds to not matching
             hint[no_match_node] = cache[(frozenset(S), t + 1)][0]
@@ -1969,6 +1972,10 @@ def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
             matched_node = cache[(frozenset(S), t)][1]
 
             owners[m + t] = matched_node
+            matched_node_indicator = np.zeros(n+m+1)
+            matched_node_indicator[matched_node] = 1
+            modified_node = np.zeros(n+m+1)
+            modified_node[m + t] = 1
             if matched_node != no_match_node:
                 # only reverse if is a match (the no match node could be "matched" to several online nodes)
                 owners[matched_node] = m + t
@@ -1979,9 +1986,13 @@ def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
                 specs.Stage.HINT,
                 next_probe={
                     'value_to_go_h': np.copy(hint),
-                    'match_h': np.copy(owners),
-                    'L_h': np.copy(L)
+                    'L_h': np.copy(L),
+                    'match_h': np.copy(matched_node_indicator),
+                    'modified_node': np.copy(modified_node)
                 })
+        else:
+            # Sending information to the GNN that the vertex has not arrived
+            probabilities[m+t] = 0
 
     probing.push(
         probes,
@@ -1989,6 +2000,8 @@ def online_bipartite_matching(A: _Array, p: _Array, m: int, n: int) -> _Out:
         next_probe={
             'match': np.copy(owners)
         })
+
+    print(len(cache))
 
     probing.finalize(probes)
     return owners, probes
